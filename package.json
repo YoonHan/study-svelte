@@ -1,0 +1,14 @@
+{
+  "name": "svelte-internals-study",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.15"
+  },
+  "scripts": {
+    "setup": "node tools/setup.mjs",
+    "compile": "node tools/compile.mjs",
+    "mount": "node tools/mount.mjs",
+    "test:signals": "cd svelte && npx -y pnpm@9.4.0 test signals"
+  }
+}

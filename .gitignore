@@ -1,0 +1,4 @@
+# Svelte source is cloned separately (see README.md)
+/svelte/
+node_modules/
+.DS_Store
