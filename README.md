@@ -22,6 +22,7 @@ node tools/setup.mjs   # svelte/ 에 clone → study/5.0.0 브랜치 생성 → 
 | `notes/` | 질문에 대한 답을 직접 적는 노트입니다. 튜터가 채점할 때 이 파일을 읽습니다. |
 | `labs/` | Node로 바로 실행하는 실험 스크립트입니다. `labs/lib/signals.mjs`는 Svelte 런타임의 signal API를 감싼 헬퍼입니다. |
 | `playground/` | 실험용 `.svelte` 컴포넌트입니다. |
+| `scratch/` | 튜터의 질문에 코드로 답하는 초안 공간입니다. 정리된 답은 `notes/`에 적습니다. |
 | `tools/` | 컴파일 결과 출력, jsdom 마운트 등 학습 도구입니다. |
 | `svelte/` | Svelte 레포 전체 이력입니다(`study/5.0.0` 브랜치). git으로 추적하지 않습니다. |
 | `PROGRESS.md` | 진행 상황, 막힌 질문, 스스로 떠올린 질문을 기록합니다. |
