@@ -1,0 +1,20 @@
+{
+	// 컴파일 결과(scratch/compiled/*.js)의 `svelte/...` import를 svelte/ 레포의 소스로 연결합니다.
+	// 에디터의 "Go to Definition"이 svelte/packages/svelte/src/ 안의 실제 구현으로 이동하게 하려는 설정입니다.
+	"compilerOptions": {
+		"module": "esnext",
+		"moduleResolution": "bundler",
+		"target": "esnext",
+		"checkJs": false,
+		"paths": {
+			"svelte": ["./svelte/packages/svelte/src/index-client.js"],
+			"svelte/internal/client": ["./svelte/packages/svelte/src/internal/client/index.js"],
+			"svelte/internal/server": ["./svelte/packages/svelte/src/internal/server/index.js"],
+			"svelte/internal/disclose-version": [
+				"./svelte/packages/svelte/src/internal/disclose-version.js"
+			]
+		}
+	},
+	"include": ["scratch/**/*", "labs/**/*", "tools/**/*"],
+	"exclude": ["node_modules", "svelte"]
+}
