@@ -20,6 +20,14 @@
 
 | 날짜 | 질문 | 결과 | 다시 볼 부분 |
 |---|---|---|---|
+| 2026-10-13 | Q1.1 | 부분 정답 | `3`이 두 비트의 조합임을 노트에 반영, `is_fragment`가 꺼졌을 때의 런타임 처리(`template.js:48`, `:55-62`), 컴파일러 근거(`Fragment.js`, `RegularElement.js:62-69`) 보강 |
+| 2026-10-13 | Q1.1 | 정확 | 재채점. `3` 항목의 플래그 이름 오타(`TEMPLATE_FRAGMENT`), 근거 칸에 컴파일 실험 결과(01/02/11/11b) 추가 권장. 컴파일러 근거 요구는 철회(관찰 질문이므로 실험 결과로 충분) |
+| 2026-10-14 | Q1.2 | 부분 정답 | 공백 한 칸이 필요한 이유(빈 `<p></p>`에는 텍스트 노드가 없음), 함수 호출 규칙의 예외(전역 함수 + 지역 의존성 없음 → 정적, `CallExpression.js:173-181`), `03-text-kinds` 컴파일 결과를 근거로 추가 |
+| 2026-10-14 | Q1.2 | 부분 정답 | 재채점. 공백 한 칸과 `null` → `TypeError` 인과는 정확. 함수 호출 예외 규칙을 "인자가 고정된 순수 함수"로 적었으나 `03b`(`format(name)`)와 모순됨 → `is_pure`(`2-analyze/visitors/shared/utils.js:183-198`)의 실제 기준 확인 필요. `03-text-kinds` 근거 아직 없음 |
+| 2026-10-14 | Q1.2 | 부분 정답 | 3차 채점. 핵심(어떤 `<p>`가 비는지, 공백 → 텍스트 노드 → `null` → `TypeError`)과 `03-text-kinds` 근거는 정확. `is_pure`를 "identifier가 scope 내에 유일하면 true"로 잘못 읽음(실제는 `utils.js:191-193`의 `binding === null`) → `03b`와 모순. "`<p></p>`는 렌더링되지 않음" 표현 수정 필요 |
+| 2026-10-14 | Q1.2 | 부분 정답 | 4차 채점. `<p></p>` 표현 문제 해소. `is_pure` 설명("선언된 적이 있으면 true")과 `CallExpression.js` 조건 설명("is_pure가 false면 정적")이 둘 다 코드와 반대로 뒤집혀 있어 서로 상쇄됨 → `utils.js:193`, `CallExpression.js:178` 다시 읽기 |
+| 2026-10-14 | Q1.2 | 부분 정답 | 5차 채점. `is_pure` 설명은 바로잡힘(선언되지 않은 전역이면 true). `CallExpression.js` 설명("is_pure가 false면 정적")이 아직 반대로 남아 있어 `03c`의 `Math.max` 결과와 모순 → `CallExpression.js:178`의 `!` 확인 |
+| 2026-10-14 | Q1.2 | 정확 | 6차 채점. `CallExpression.js` 설명을 "is_pure가 true이고 의존성이 없으면 정적"으로 바로잡음. 함수 호출 판단 규칙과 공백 → 텍스트 노드 → `null` → `TypeError` 인과까지 모두 근거와 함께 정리됨 |
 
 결과 값: `정확` / `부분 정답` / `오해 있음`
 
@@ -35,3 +43,5 @@
 
 - (2026-10-12) `update_effect(effect)`는 `update_reaction(effect)`를 호출하는데(`runtime.js:442`), 받는 쪽 매개변수 이름은 왜 `effect`가 아니라 `reaction`인가? `reaction`이라는 개념에는 effect 말고 무엇이 더 포함되는가? → 2단계에서 확인
 - (2026-10-12) 컴파일 결과에서 `$.template_effect`(초기 값 쓰기)가 `$.append`(문서에 삽입)보다 먼저 실행되는 이유는 무엇인가? 같은 동기 코드 안에서는 순서와 관계없이 페인트가 한 번만 일어난다는 것을 실험으로 확인했으므로(`scratch/01-vanilla-counter.html`), 페인트 횟수는 이유가 아니다. 하위 컴포넌트와 블록이 anchor 기준으로 삽입되는 방식과 관련이 있을 것으로 추측 → 1-D 절, 3단계에서 확인
+- (2026-10-13) 컴파일러는 상태를 읽지 않는 함수 호출(`{format(name)}`)도 "바뀔 수 있다"고 보고 `template_effect`를 만든다(`shared/fragment.js:71-80`). 런타임이 의존성 없는 effect를 트리에서 빼 주므로(`effects.js:137-145`) 비용은 작지만, 프로그램 전체의 데이터 흐름을 분석하는 대신 이 보수적인 규칙을 택한 근거는 무엇이었나? Svelte 팀은 이런 트레이드오프를 어떤 기준으로 결정했나? 단서: `2-analyze/visitors/CallExpression.js:174-177`의 TODO 주석이 이 트레이드오프를 언급하며 https://github.com/sveltejs/svelte/issues/13266 을 가리킴 → 5단계에서 git 이력과 PR 토론으로 확인
+- (2026-10-14) `operations.js:35-37`은 `Node.prototype`의 `firstChild`/`nextSibling` getter를 꺼내 캐싱해 두고 `get_first_child`/`get_next_sibling`에서 `.call(node)`로 호출한다. 왜 `node.firstChild`를 직접 쓰지 않는가? 프로토타입 체인 탐색을 줄이려는 것인지, 여러 종류의 노드에 호출되는 자리에서 엔진의 인라인 캐시가 megamorphic 상태가 되는 것을 피하려는 것인지, 다른 이유가 있는지 확인 → 5단계에서 이 코드를 도입한 PR 추적

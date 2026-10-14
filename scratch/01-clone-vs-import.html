@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <body>
+    <!--
+      실험: cloneNode와 importNode로 복제한 커스텀 엘리먼트는 무엇이 다른가?
+
+      Svelte의 template()은 reconciler.js의 create_fragment_from_html()로
+      HTML을 <template> 요소의 content에 한 번 파싱해 두고, 그것을 복제합니다.
+      아래 코드는 그 과정을 그대로 흉내 냅니다.
+
+      실행하기 전에 표의 빈칸 6개를 먼저 예측해 보세요. (true / false)
+
+                                           cloneNode   importNode
+        ownerDocument === document           ?            ?
+        instanceof MyWidget (업그레이드됨)    ?            ?
+        widget.label = 'hi' 뒤 setter 호출   ?            ?
+
+      실행 방법: 브라우저로 열고 개발자 도구 콘솔을 확인합니다.
+    -->
+    <script>
+      class MyWidget extends HTMLElement {
+        set label(value) {
+          console.log('  -> MyWidget의 label setter가 호출됨:', value);
+          this._label = value;
+        }
+        get label() {
+          return this._label;
+        }
+      }
+      customElements.define('my-widget', MyWidget);
+
+      // reconciler.js의 create_fragment_from_html()과 같은 방식
+      const tpl = document.createElement('template');
+      tpl.innerHTML = '<my-widget></my-widget>';
+      const fragment = tpl.content;
+
+      for (const method of ['cloneNode', 'importNode']) {
+        const clone =
+          method === 'cloneNode'
+            ? fragment.cloneNode(true)
+            : document.importNode(fragment, true);
+        const widget = clone.firstChild;
+
+        console.log(`[${method}]`);
+        console.log('  ownerDocument === document:', widget.ownerDocument === document);
+        console.log('  instanceof MyWidget:', widget instanceof MyWidget);
+        console.log('  widget.label = "hi" 실행');
+        widget.label = 'hi';
+        console.log('  hasOwnProperty("label"):', Object.hasOwn(widget, 'label'));
+      }
+    </script>
+  </body>
+</html>
