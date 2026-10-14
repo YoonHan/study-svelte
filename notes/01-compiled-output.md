@@ -77,6 +77,19 @@ $.template_effect(() => $.set_text(text, ...))
 
 **내 답:**
 
+(`$.template()` 에 들어갈 문자열 예측)
+`<span data-if="show"></span> <b></b> <i></i> <em> </em>`
+
+(실제)
+`<!> <b>static</b> <i>static</i> <em> </em>`
+
+> 차이: if block 은 '<!>' 라는 HTML 주석 shorthand 로 표현이 되어있고, 'static' 이라는 정적 텍스트는 템플릿 문자열에서부터 포함이 되어있다. 정적 텍스트는 템플릿 문자열 단계에서부터 그냥 포함이 되는구나를 알게됨.
+> '<!>' 와 '<b>' 사이의 공백을 통해 텍스트 노드를 표현하는데, 이 텍스트 노드에 `{name} is the second node` 텍스트 값을 할당하게 됨.
+
+`09-anchors.compiled.js` 에서
+- '<b>static</b>', '<i>static</i>' 노드를 가리키는 변수는 안만들어지고, `<em>{name}</em>` 을 가리키는 변수만 만들어졌음. 
+그 이유를 추론해보자면, 전자의 두 노드는 정적 노드라서 그런것일듯. 즉, <em>은 지역 의존성을 가지고 있고, <b> 나 <i>에는 이런 의존성이 없어서임. 정적 노드 판단은 `svelte/packages/svelte/src/compiler/phases/3-transform/client/visitors/shared/fragment.js` > `is_static_element()`로 함. 이런 지역 의존성을 판단할 때에는 자식 뿐만 아니라 attribute까지 검사함.
+- `var em = $.sibling(text, 5);` '<em>' 노드를 고르기 위해 `5`라는 숫자를 인자로 넣은 이유는, `text` 변수가 가리키는 노드에서 5번째 형제가 '<em>' 노드이기 때문임. 중간에 껴있는 공백 문자도 텍스트 노드로써 형제 노드로 생성이 됨.
 
 ---
 
