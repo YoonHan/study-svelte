@@ -19,14 +19,16 @@ node tools/setup.mjs   # svelte/ 에 clone → study/5.0.0 브랜치 생성 → 
 | 경로 | 내용 |
 |---|---|
 | `curriculum/` | 단계별 질문지입니다. `00-overview.md`에 전체 로드맵과 학습 방법이 있습니다. |
-| `notes/` | 질문에 대한 답을 직접 적는 노트입니다. 튜터가 채점할 때 이 파일을 읽습니다. |
+| `notes/` | 유도 질문과 해설의 쌍입니다. 학습자가 채팅으로 답하면 튜터가 다듬어서 기록합니다. |
 | `labs/` | Node로 바로 실행하는 실험 스크립트입니다. `labs/lib/signals.mjs`는 Svelte 런타임의 signal API를 감싼 헬퍼입니다. |
 | `playground/` | 실험용 `.svelte` 컴포넌트입니다. |
-| `scratch/` | 튜터의 질문에 코드로 답하는 초안 공간입니다. 정리된 답은 `notes/`에 적습니다. |
+| `scratch/` | 실험 파일과 직접 만든 예제입니다. 컴파일 결과와 마운트 기록은 `scratch/compiled/`에 있습니다. |
+| `log/tangents/` | 질문지 밖의 곁가지 질문과 답입니다. |
+| `site/` | 학습 기록을 공개하는 웹 앱 『Svelte 대백과』입니다. `site/README.md`, `site/VISION.md`를 보세요. |
 | `tools/` | 컴파일 결과 출력, jsdom 마운트 등 학습 도구입니다. |
 | `svelte/` | Svelte 레포 전체 이력입니다(`study/5.0.0` 브랜치). git으로 추적하지 않습니다. |
 | `PROGRESS.md` | 진행 상황, 막힌 질문, 스스로 떠올린 질문을 기록합니다. |
-| `CLAUDE.md`, `.claude/` | Claude Code를 튜터로 동작하게 하는 설정과 채점 기준입니다. |
+| `CLAUDE.md`, `.claude/` | Claude Code를 튜터로 동작하게 하는 설정, 채점 기준, skill입니다. `.claude/skills/`에는 Emil Kowalski의 애니메이션 skill도 들어 있습니다(MIT, `EMIL_KOWALSKI_SKILLS.md`). |
 
 ## 도구
 

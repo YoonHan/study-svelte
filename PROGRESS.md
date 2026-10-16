@@ -2,6 +2,57 @@
 
 튜터가 이 파일을 갱신합니다. 직접 수정해도 괜찮습니다.
 
+## 현재 상태와 다음 할 일 (2026-10-16 기준)
+
+다른 머신에서 이어서 작업하기 위한 인수인계입니다. 작업을 이어 갈 때마다 이 절을 최신으로 고칩니다.
+
+### 다른 머신에서 시작하기
+
+```bash
+git clone https://github.com/YoonHan/study-svelte.git svelte-study
+cd svelte-study
+git config user.name "Yoon Han"
+git config user.email "yoontopia94@gmail.com"
+node tools/setup.mjs          # svelte/ clone, study/5.0.0 브랜치, 의존성 설치 (Node 22.15 이상)
+cd site && npm install && npm run dev
+```
+
+- push를 `YoonHan` 계정으로 하려면 그 머신의 `gh`에 `YoonHan` 계정으로 로그인한 뒤, 이 레포의 로컬 git 설정에 인증 도우미를 지정합니다. 이 머신에서 쓴 설정은 다음과 같습니다(전역 설정은 건드리지 않습니다).
+  ```bash
+  git config --local credential.https://github.com.helper ''
+  git config --local --add credential.https://github.com.helper '!f() { test "$1" = get && echo username=YoonHan && echo "password=$(gh auth token --user YoonHan)"; }; f'
+  git config --local credential.https://github.com.username YoonHan
+  ```
+- 튜터의 작업 관례(CLI 대신 실행, 커밋 작성자, push 계정)는 `CLAUDE.md`의 "작업 관례" 절에 있습니다. 이전 머신의 Claude 메모리는 옮겨지지 않으므로 이 절이 기준입니다.
+
+### 공부
+
+- **1단계 진행 중.** 학습 경로는 `curriculum/01-compiled-output.md`의 "학습 경로" 표를 따릅니다.
+- 끝난 질문: Q1.1, Q1.2, Q1.3, Q1.4. 유도 질문과 해설은 `notes/01-compiled-output.md`에 있습니다.
+- 경로상 다음 질문: **Q1.6** (1-1장의 마지막 질문). 그다음은 1-3장의 Q1.18입니다.
+- 1-0장의 Q1.0(바닐라 카운터와 컴파일 결과 비교)은 실험만 해 두었고 노트에는 아직 유도 질문을 기록하지 않았습니다.
+- 공부는 사이트를 마음에 들게 만든 뒤에 이어 가기로 했습니다.
+
+### 사이트 (`site/`)
+
+- **컨셉**: 『Svelte 대백과』. 어두운 서재 한가운데 고서풍 백과사전 한 권이 놓여 있고, 각 장은 그 책의 한 펼침면입니다. 자세한 내용은 `site/VISION.md`의 "컨셉" 절에 있습니다.
+- **된 것**
+  - 첫 화면: CSS 3D로 만든 가죽 장정의 책. 마우스를 따라 기울고, 누르면 표지가 열리며 목차가 나옵니다. `/?toc`로 들어오면 열린 상태로 바로 보입니다.
+  - 1-2장(`/learn/1-2`): 펼친 책 양면 레이아웃(왼쪽 본문, 오른쪽 도판), 잠금 진행(접힌 쪽지를 펼쳐야 다음 문항이 열림), 각주 형태의 근거, 연필 메모 형태의 처음 세운 가설, 코드 도판, `$.sibling` 노드 탐색 도판. Q1.3의 유도 질문 1~3번만 들어 있습니다.
+  - 모바일: 책은 화면에 맞게 줄어들고, 장 화면은 한 면짜리로 바뀌며 도판이 위에 고정됩니다.
+  - `npm run check`, `npm run build` 통과.
+- **다음 할 일**
+  1. 디자인에 대한 학습자의 피드백을 반영합니다(이번 개편 결과를 아직 보지 않았습니다).
+  2. 1-2장의 나머지를 채웁니다: Q1.3의 4~5번, Q1.2의 1~7번. `notes/01-compiled-output.md`의 해설을 옮깁니다.
+  3. 남은 도판 종류를 만듭니다: DOM 변경 애니메이션(`textContent`와 `nodeValue` 비교), 실행 결과(에러 출력), playground(`svelte@5.0.0` 브라우저 컴파일).
+  4. 목차에서 장으로 넘어갈 때의 화면 전환(책장 넘김 등)을 정합니다.
+  5. 완성되면 `review-animations` skill로 애니메이션을 검토합니다.
+- **알려진 문제**
+  - 1번 문항의 컴파일 결과는 화면에서만 가려 두었고 HTML 소스에는 들어 있습니다.
+  - 모바일에서는 도판이 위에 있는데 본문은 "오른쪽의 코드"라고 부릅니다.
+  - 책 표지의 두께(판지 옆면)와 뒤표지는 아직 단순하게 그려져 있습니다.
+  - 배포할 호스팅 위치를 정하지 않았습니다.
+
 ## 단계별 진행 상황
 
 | 단계 | 상태 | 시작일 | 완료일 | 체크포인트(`/quiz`) | 메모 |

@@ -1,0 +1,139 @@
+<script>
+	import Chapter from '#lib/chapter/Chapter.svelte';
+	import Step from '#lib/chapter/Step.svelte';
+	import Ask from '#lib/chapter/Ask.svelte';
+	import Reveal from '#lib/chapter/Reveal.svelte';
+	import Evidence from '#lib/chapter/Evidence.svelte';
+	import Hypothesis from '#lib/chapter/Hypothesis.svelte';
+	import CodeView from '#lib/scenes/CodeView.svelte';
+	import NodeWalk from '#lib/scenes/NodeWalk.svelte';
+	import Plate from '#lib/scenes/Plate.svelte';
+
+	let { data } = $props();
+
+	const walk_nodes = [
+		{ label: '<!>', kind: 'comment', caption: 'node' },
+		{ label: '" … is the second node "', kind: 'text', caption: 'text' },
+		{ label: '<b>', kind: 'element' },
+		{ label: '" "', kind: 'text' },
+		{ label: '<i>', kind: 'element' },
+		{ label: '" "', kind: 'text' },
+		{ label: '<em>', kind: 'element', caption: 'em' }
+	];
+</script>
+
+<svelte:head>
+	<title>1-2. 노드를 찾아가는 방법 · Svelte 대백과</title>
+</svelte:head>
+
+<Chapter id="1-2" part="제1부 · 컴파일 결과 관찰" title="노드를 찾아가는 방법: 탐색과 공백 자리">
+
+{#snippet panel(scene, revealed)}
+	{#if scene === 'predict'}
+		<Plate number={1} caption="09-anchors.svelte와, 그것이 컴파일된 템플릿 문자열">
+			<CodeView code={data.source} title="09-anchors.svelte" />
+			<CodeView
+				code={data.compiled}
+				title="09-anchors.compiled.js"
+				range={[4, 5]}
+				highlight={revealed ? [5] : []}
+				veiled={revealed ? undefined : '예측한 뒤에 공개됩니다'}
+				notes={revealed ? [{ line: 5, text: '{#if}는 <!>, 정적 텍스트는 그대로, 동적 텍스트 자리는 공백 한 칸' }] : []}
+			/>
+		</Plate>
+	{:else if scene === 'where'}
+		<Plate number={2} caption="원본 7번째 줄의 텍스트가 들어가는 자리">
+			<CodeView code={data.source} title="09-anchors.svelte" highlight={[7]} />
+			<CodeView
+				code={data.compiled}
+				title="09-anchors.compiled.js"
+				highlight={revealed ? [5, 19, 26] : [19, 26]}
+				notes={revealed
+					? [
+							{ line: 5, text: '<!> 뒤의 공백 한 칸이 텍스트 노드 자리' },
+							{ line: 19, text: '<!> 바로 다음 형제 = 그 텍스트 노드' },
+							{ line: 26, text: '앞뒤의 공백은 원본의 줄바꿈' }
+						]
+					: []}
+			/>
+		</Plate>
+	{:else if scene === 'walk'}
+		<Plate number={3} caption="text에서 출발해 nextSibling을 다섯 번 따라가면 em에 닿는다">
+			<NodeWalk nodes={walk_nodes} start={1} hops={5} from="text" to="em" locked={!revealed} />
+			<CodeView code={data.compiled} title="09-anchors.compiled.js" range={[10, 24]} highlight={[19, 20]} />
+		</Plate>
+	{/if}
+{/snippet}
+
+<Step scene="predict">
+<Ask>
+
+컴파일하기 **전에** 예측해 보세요. 오른쪽의 `09-anchors.svelte`를 컴파일하면, `$.template(...)`에 들어갈 템플릿 문자열은 어떤 모양이 될까요?
+
+</Ask>
+<Reveal>
+
+실제 템플릿 문자열은 `<!> <b>static</b> <i>static</i> <em> </em>`입니다. 처음 예측과 비교하면 세 군데가 다릅니다.
+
+<Hypothesis>
+
+`<span data-if="show"></span> <b></b> <i></i> <em> </em>`라고 예측했습니다. 동적인 텍스트 자리에 공백 한 칸을 넣는 것(`<em> </em>`)과 요소 사이의 공백은 맞혔습니다.
+
+</Hypothesis>
+
+1. `{#if}` 블록은 `<!>` 하나, 즉 빈 HTML 주석으로 표시됩니다. 블록의 내용 `<span>first</span>`은 메인 템플릿에 들어가지 않고 별도의 템플릿으로 분리됩니다.
+2. 바뀌지 않는 텍스트 `static`은 템플릿에 그대로 들어갑니다. 공백 한 칸으로 비워 두는 것은 동적인 텍스트뿐입니다.
+3. 원본 7번째 줄 `{name} is the second node`는 템플릿 문자열 어디에서도 글자로 보이지 않습니다.
+
+<Evidence>
+
+`scratch/compiled/09-anchors.compiled.js:4-5`
+
+</Evidence>
+
+</Reveal>
+</Step>
+
+<Step scene="where">
+<Ask>
+
+그렇다면 원본 7번째 줄 `{name} is the second node`는 템플릿 문자열의 어느 부분에 들어가 있을까요? 오른쪽에서 `set_text`가 쓰는 문자열의 **앞뒤**를 살펴보세요.
+
+</Ask>
+<Reveal>
+
+`<!>`와 `<b>` 사이의 **공백 한 칸**이 이 텍스트의 자리입니다. 원본에서 `{/if}` 뒤의 줄바꿈, `{name} is the second node`, `<b>` 앞의 줄바꿈이 텍스트 노드 하나로 합쳐졌습니다. 그래서 26번째 줄의 `set_text`가 쓰는 문자열에도 앞뒤로 공백이 붙어 있습니다.
+
+컴파일된 코드는 19번째 줄에서 `<!>`의 바로 다음 형제를 `text`로 잡고, 나중에 26번째 줄에서 그 노드에 값을 씁니다.
+
+<Evidence>
+
+`scratch/compiled/09-anchors.compiled.js:19`, `:26`
+
+</Evidence>
+
+</Reveal>
+</Step>
+
+<Step scene="walk">
+<Ask>
+
+`text`에서 출발해서 `$.sibling(text, 5)`로 `<em>`에 도착합니다. 그 사이에 있는 형제 노드를 순서대로 나열하면, 왜 하필 `5`가 될까요?
+
+</Ask>
+<Reveal>
+
+`text` → `<b>` → 공백 → `<i>` → 공백 → `<em>` 순서로 다섯 번 이동합니다. 오른쪽 도판에서 표식을 한 칸씩 옮겨 보세요.
+
+요소 사이의 공백도 **텍스트 노드**이므로 형제 노드 하나로 셉니다. 원본에서 `<b>static</b>`과 `<i>static</i>` 사이에 있던 줄바꿈이 컴파일러에 의해 공백 한 칸으로 줄어든 것입니다. `sibling`은 `count`만큼 `nextSibling`을 따라가는 단순한 반복문입니다.
+
+<Evidence>
+
+`scratch/compiled/09-anchors.compiled.js:20`, `src/internal/client/dom/operations.js:147-152`
+
+</Evidence>
+
+</Reveal>
+</Step>
+
+</Chapter>

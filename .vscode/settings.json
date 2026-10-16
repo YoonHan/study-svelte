@@ -2,7 +2,9 @@
     "search.useIgnoreFiles": false,
     "search.exclude": {
         "**/node_modules": true,
-        "**/.git": true
+        "**/.git": true,
+        "site/build": true,
+        "site/.svelte-kit": true
     },
     "workbench.colorCustomizations": {
         "activityBar.activeBackground": "#7165ff",

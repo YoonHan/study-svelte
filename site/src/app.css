@@ -1,0 +1,104 @@
+/*
+ * 『Svelte 대백과』: a dark study with one antique book in it.
+ * The room is always dark and the pages are always paper, so there is no light/dark switch.
+ */
+:root {
+	/* the room */
+	--room: #120e0c;
+	--room-lit: #2a1f19;
+
+	/* paper and ink */
+	--paper: #f3ead6;
+	--paper-shade: #e6d9bd;
+	--paper-edge: #cfbd96;
+	--ink: #2b2219;
+	--ink-soft: #5b4c3b;
+	--ink-faint: #998a72;
+	--rule: color-mix(in oklab, var(--ink) 18%, transparent);
+	--rubric: #a3361b; /* red ink for headings and numbers: a nod to Svelte's orange */
+	--rubric-soft: color-mix(in oklab, var(--rubric) 12%, transparent);
+	--pencil: #5a5650;
+
+	/* binding */
+	--leather: #5a2415;
+	--leather-dark: #2c100a;
+	--gold: #c9a55a;
+	--gold-hi: #f1dea2;
+	--gold-lo: #7c5d28;
+	--gold-foil: linear-gradient(
+		115deg,
+		var(--gold-lo) 0%,
+		var(--gold-hi) 28%,
+		var(--gold) 46%,
+		var(--gold-hi) 62%,
+		var(--gold-lo) 100%
+	);
+
+	--font-serif: 'Noto Serif KR', 'Apple SD Gothic Neo', serif;
+	--font-display: 'Cormorant Garamond', 'Noto Serif KR', serif;
+	--font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+	--font-hand: 'Nanum Pen Script', cursive;
+
+	/* motion tokens (Emil Kowalski, emil-design-eng) */
+	--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+	--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+	/* fine paper grain, tinted brown */
+	--grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.27 0 0 0 0 0.16 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+	color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	background: var(--room);
+}
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	background:
+		radial-gradient(ellipse 70% 60% at 50% 38%, var(--room-lit), transparent 70%), var(--room);
+	color: var(--paper);
+	font-family: var(--font-serif);
+	font-size: 16px;
+	line-height: 1.8;
+	word-break: keep-all;
+	overflow-wrap: anywhere;
+	-webkit-font-smoothing: antialiased;
+}
+
+a {
+	color: inherit;
+}
+
+button {
+	font: inherit;
+	color: inherit;
+}
+
+:focus-visible {
+	outline: 2px solid var(--gold);
+	outline-offset: 3px;
+}
+
+/* Shiki emits per-token colors as CSS variables; the plates are printed on paper, so only the light theme is used */
+.shiki .src span {
+	color: var(--shiki-light);
+}
+
+/* Cormorant's default figures are old-style (a 1 reads like an I); use lining figures everywhere */
+body {
+	font-variant-numeric: lining-nums;
+	font-feature-settings: 'lnum' 1;
+}
+
+::selection {
+	background: color-mix(in oklab, var(--rubric) 28%, transparent);
+}

@@ -60,6 +60,13 @@
 
 - (아직 지시 없음)
 
+## 작업 관례
+
+- **CLI는 튜터가 대신 실행합니다.** 학습자는 명령어를 직접 치지 않습니다. `tools/compile.mjs`, `tools/mount.mjs` 등의 결과는 터미널 출력만 보여 주지 말고 `scratch/compiled/<원본 이름>.compiled.js`(마운트 기록은 `.mount.txt`) 파일로 저장하고, 원본 `.svelte` 파일 링크와 짝지어 알려 줍니다.
+- **커밋 작성자는 `Yoon Han <yoontopia94@gmail.com>`입니다.** 이 레포의 로컬 git 설정(`user.name`, `user.email`)으로 지정합니다. 전역 설정은 회사 계정이므로 바꾸지 않습니다.
+- **원격 저장소는 `https://github.com/YoonHan/study-svelte`(public)이고, push는 GitHub 계정 `YoonHan`으로 합니다.** 새 원격 저장소를 만들거나 다른 계정을 써야 할 때는 학습자에게 먼저 묻습니다.
+- **사이트(`site/`)의 애니메이션은 `.claude/skills/`의 Emil Kowalski skill(`emil-design-eng`, `animate`, `review-animations` 등)을 따릅니다.**
+
 ## `svelte/` 레포 다루기
 
 - `svelte/`는 별도의 git 레포입니다. 학습자가 실험을 위해 런타임 소스를 수정하는 것은 권장하는 학습 방법입니다. 다만 Claude가 직접 수정할 때는 학습자의 요청이 있어야 하며, 실험이 끝나면 `git -C svelte diff`로 변경 내역을 보여 주고 되돌릴지 묻습니다.
