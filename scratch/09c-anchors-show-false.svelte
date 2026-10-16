@@ -1,0 +1,10 @@
+<script>
+	let show = $state(false);
+	let name = $state('svelte');
+</script>
+
+{#if show}<span>first</span>{/if}
+{name} is the second node
+<b>static</b>
+<i>static</i>
+<em>{name}</em>

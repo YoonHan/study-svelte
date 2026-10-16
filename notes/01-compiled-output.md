@@ -97,6 +97,63 @@ $.template_effect(() => $.set_text(text, ...))
 
 **내 답:**
 
+[`template()`의 파싱 시점]
+`var root = $.template()` 라고 가정하면, `root()`이 실행되는 시점에 파싱이 시작됨.
+`$.template()`가 반환하는 arrow function에 `create_fragment_from_html()` 호출이 포함되어있기 때문.
+> 근거: svelte/packages/svelte/src/internal/client/dom/template.js:46-53
+
+`$.template()`는 모듈 최상위 코드라서 모듈이 import되는 순간에 딱 한 번만 실행되고, 
+`root()`은 첫 번째 호출에서 `node` 클로져 변수에 파싱된 document fragment를 저장해둠.
+그 이후 호출부터는 `node` 변수에 있는 저장된 값을 파싱 없이 clone만 해서 반환함.
+
+[`09-anchors.svelte` 컴포넌트 마운트 시 파싱이 2번 일어난 이유]
+`{#if show}<span>first</span>{/if}` 이 부분이 별도의 template root 변수로 빠지기 때문.
+이 부분은 아래 코드로 컴파일 됨.
+
+```js
+$.if(node, () => show, ($$anchor) => {
+  var span = root_1();
+
+  $.append($$anchor, span);
+});
+```
+
+즉, if 조건이 참일 때에만 해당 template root가 실행됨. 초기 `show = true`이므로 `root_1`에 더해 `root`까지 호출되므로 총 **2번**의 HTML 파싱이 필요함.
+
+[`has_start`가 `false`일 때 앞에 `<!>`를 하나 더 붙이는 이유?]
+결론부터 말하자면, <!>를 맨 앞에 하나 더 붙이지 않으면 `destroy_effect()` 실행 시
+해당 컴포넌트의 DOM이 일부 지워지지 않고 남아있을 수 있기 때문임.
+예를 들어,
+
+```js
+$.template('<!> <b>static</b> <i>static</i> <em> </em>')
+```
+
+라는 코드에서 `<!>`를 안붙이게 된다면,
+저 template 함수 실행의 결과는 다음과 같을 것임.
+
+`<!> <b> <i> <em>`
+
+여기에서 `nodes_start`는 `<!>`이 되고, `nodes_end`는 <em>이 됨.
+그런데 이 상태에서 DOM에 mount가 이루어지면 <span> 노드가 `<!>` 앞에 위치하게 됨.
+
+`<span> <!> <b> <i> <em>`
+
+이 상태에서 `destroy_effect()`가 실행되면, <span> 태그틑 DOM에서 지워지지 않은채로 남아있게됨.
+왜냐하면 `destroy_effect()`는 while문을 돌면서 `nodes_start`부터 시작해 `nodes_end`까지의 거쳐가즌 모든 노드를 삭제하는 로직을 실행하기 때문.
+> 근거: svelte/packages/svelte/src/internal/client/reactivity/effects.js:436-442
+
+`$.first_child()`와 `$.template()`은 공통의 합의를 전제로 동작함.
+`$.template()`에서는 HTML 문자열이 빈 주석으로 시작하면 반드시 맨 앞에 `<!>`로 빈 주석 문자열을 하나 더 붙임. 이 덕에 `$.first_child()` 는 첫 번쨰 자식을 꺼냈는데 빈 주석 노드라면, 이는 분명히 `$.template()`이 붙인 빈 주석 노드라고 확신할 수 있으므로 안전하게 그 다음 노드를 꺼내서 반환할 수 있게 됨.
+> 근거: svelte/packages/svelte/src/internal/client/dom/template.js:47
+> svelte/packages/svelte/src/internal/client/dom/operations.js:122
+
+[mount 시 빈 텍스트 노드]
+컴포넌트 마운트 시 빈 텍스트 노드를 하나 생성해서 이를 해당 컴포넌트 구역의 마지막임을 알리는 노드로 활용함.
+> 근거: svelte/packages/svelte/src/internal/client/render.js:229
+
+HTML 맨 앞에 보이는 <!----> 주석은 `$.template()` 이 반환하는 함수가 호출될 때 생성이 됨.
+> 근거: svelte/packages/svelte/src/internal/client/dom/template.js:47
 
 ---
 

@@ -1,0 +1,32 @@
+
+── mount ─────────────────────────────
+  insert    ""  (into #app)
+  insert    <!---->  (into #app)
+  insert    <p>visible</p>  (into #app)
+  insert    <!---->  (into #app)
+  insert    " "  (into #app)
+  insert    <ul><li>a</li><li>b</li></ul>  (into #app)
+  insert    " "  (into #app)
+  insert    <ul><li>a</li><li>b</li></ul>  (into #app)
+  insert    " "  (into #app)
+  insert    <section><h2>hello</h2> <p>slotted content</p><!----></section>  (into #app)
+  insert    <!---->  (into #app)
+  insert    " "  (into #app)
+  insert    <button>toggle</button>  (into #app)
+  html: <!----><p>visible</p><!----> <ul><li>a</li><li>b</li></ul> <ul><li>a</li><li>b</li></ul> <section><h2>hello</h2> <p>slotted content</p><!----></section><!----> <button>toggle</button>
+
+── unmount ─────────────────────────────
+  remove    <!---->  (from #app)
+  remove    <p>visible</p>  (from #app)
+  remove    <!---->  (from #app)
+  remove    " "  (from #app)
+  remove    <ul><li>a</li><li>b</li></ul>  (from #app)
+  remove    " "  (from #app)
+  remove    <ul><li>a</li><li>b</li></ul>  (from #app)
+  remove    " "  (from #app)
+  remove    <section><h2>hello</h2> <p>slotted content</p><!----></section>  (from #app)
+  remove    <!---->  (from #app)
+  remove    " "  (from #app)
+  remove    <button>toggle</button>  (from #app)
+  remove    ""  (from #app)
+  html: 
