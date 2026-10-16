@@ -64,7 +64,39 @@ node tools/mount.mjs playground/01-compiled-output/08-blocks.svelte \
 
 Svelte 저장소의 snapshot 테스트도 좋은 자료입니다. `svelte/packages/svelte/tests/snapshot/samples/<이름>/index.svelte`가 입력이고, `_expected/client/index.svelte.js`와 `_expected/server/index.svelte.js`가 기대 출력입니다. `svelte/` 디렉터리에서 `npx -y pnpm@9.4.0 test snapshot`을 실행하면 이 기대 출력과 실제 출력을 비교합니다.
 
+## 학습 경로
+
+아래 질문들은 처음 작성한 순서(1-A~1-D)대로 실려 있지만, 공부는 이 표의 순서로 진행합니다. 직접 짠 바닐라 카운터와 Svelte의 컴파일 결과를 비교하면 같은 일을 하는 코드가 여섯 군데에서 다르게 생겼는데, 그 차이 하나가 한 장이 됩니다. 질문 ID는 바꾸지 않고 순서만 바꿉니다. 이 표는 대략적인 초안이므로, 공부하면서 장을 나누거나 질문을 옮길 수 있습니다.
+
+| 장 | 주제 | 질문 |
+|---|---|---|
+| 1-0 | 바닐라 카운터와 컴파일 결과 비교 | Q1.0 |
+| 1-1 | 노드를 만드는 방법: 템플릿 파싱과 복제 | Q1.1, Q1.4(파싱 시점), Q1.6 |
+| 1-2 | 노드를 찾아가는 방법: 탐색과 공백 자리 | Q1.3, Q1.2 |
+| 1-3 | 문서에 넣는 방법: anchor와 블록 | Q1.4(`<!>`와 빈 텍스트 노드), Q1.18 |
+| 1-4 | 값을 쓰고 갱신하는 방법: `template_effect` | Q1.12, Q1.13, Q1.14 |
+| 1-5 | 상태 선언이 바뀌는 방법: runes | Q1.7, Q1.8, Q1.9, Q1.10, Q1.11 |
+| 1-6 | 이벤트를 연결하는 방법: 위임과 hoisting | Q1.15, Q1.16, Q1.17 |
+| 1-7 | 같은 코드, 다른 출력: hydration, server, legacy, dev | Q1.5, Q1.19, Q1.20 |
+
 ## 질문
+
+### 1-0. 출발점
+
+**Q1.0** `[관찰]` 다음 카운터 컴포넌트를 프레임워크 없이 순수 JavaScript로 직접 구현하세요(`scratch/01-vanilla-counter.html`). 그런 다음 같은 컴포넌트의 컴파일 결과(`scratch/compiled/01-counter.compiled.js`)와 나란히 놓고, 같은 일을 하는 코드가 어떻게 다르게 생겼는지 찾아 목록으로 만드세요. 각 차이에 대해 "Svelte는 왜 이렇게 했을까?"라는 질문을 하나씩 적어 두면, 그 질문들이 1단계의 나머지 장으로 이어집니다.
+
+```svelte
+<script>
+	let count = $state(0);
+</script>
+
+<button onclick={() => count++}>{count}</button>
+<p>두 배: {count * 2}</p>
+<button onclick={() => count = 0}>초기화</button>
+```
+
+<details><summary>힌트 1</summary>컴포넌트가 화면에 나타나기까지 해야 하는 일을 순서대로 떠올려 보세요. 노드를 만들고, 나중에 값을 쓸 노드를 기억해 두고, 값을 쓰고, 이벤트를 연결하고, 문서에 넣어야 합니다. 상태가 바뀌었을 때 화면을 갱신하는 일도 있습니다.</details>
+<details><summary>힌트 2</summary>바닐라 구현에서 <code>createElement</code>, <code>render()</code>, <code>addEventListener</code>, <code>appendChild</code>가 각각 컴파일 결과의 어느 줄에 대응하는지 짝지어 보세요. 짝이 없는 줄도 눈여겨보세요.</details>
 
 ### 1-A. 템플릿과 노드 탐색
 
