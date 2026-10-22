@@ -1,52 +1,70 @@
 /*
- * 『Svelte 대백과』: a dark study with one antique book in it.
- * The room is always dark and the pages are always paper, so there is no light/dark switch.
+ * 공부 노트: printed problems, handwritten working.
+ * - Printed layer (chapter titles, questions): Hahmlet, heavy, like a workbook.
+ * - Reading layer (sentences, explanations): Gowun Dodum.
+ * - The learner's layer (notes on the code): Nanum Pen Script in the Svelte-orange pen, highlighter.
+ * - Code is copied onto ruled paper; one code line is exactly one rule (--rule-gap).
  */
 :root {
-	/* the room */
-	--room: #120e0c;
-	--room-lit: #2a1f19;
+	--bg: #fffef9; /* notebook paper */
+	--surface: #ffffff;
+	--surface-2: #f4f2ea;
+	--fg: #24272b; /* ink */
+	--fg-2: #565b63;
+	--fg-3: #8d9198;
+	--line: #e3e0d6;
+	--accent: #d83a00; /* Svelte orange, deepened so small text keeps its contrast on paper */
+	--accent-soft: color-mix(in oklab, var(--accent) 10%, transparent);
+	--red: #c8322d; /* red pen: wrong answers and errors only */
+	--red-soft: color-mix(in oklab, var(--red) 9%, transparent);
+	--focus: #d83a00;
+	--focus-soft: color-mix(in oklab, var(--focus) 10%, transparent);
+	--ok: #2e7d4f; /* green pen */
+	--hi: rgb(255 232 70 / 0.72); /* highlighter, under part of a word (titles) */
+	--hi-wash: rgb(255 228 60 / 0.5); /* faint highlighter behind a code line's text */
+	--code-weight: 500;
+	--hi-green: rgb(130 228 168 / 0.6);
+	--rule: rgb(80 130 200 / 0.2); /* ruled lines */
+	--margin: rgb(214 69 69 / 0.42); /* the red margin line */
+	--rule-gap: 28px;
 
-	/* paper and ink */
-	--paper: #f3ead6;
-	--paper-shade: #e6d9bd;
-	--paper-edge: #cfbd96;
-	--ink: #2b2219;
-	--ink-soft: #5b4c3b;
-	--ink-faint: #998a72;
-	--rule: color-mix(in oklab, var(--ink) 18%, transparent);
-	--rubric: #a3361b; /* red ink for headings and numbers: a nod to Svelte's orange */
-	--rubric-soft: color-mix(in oklab, var(--rubric) 12%, transparent);
-	--pencil: #5a5650;
-
-	/* binding */
-	--leather: #5a2415;
-	--leather-dark: #2c100a;
-	--gold: #c9a55a;
-	--gold-hi: #f1dea2;
-	--gold-lo: #7c5d28;
-	--gold-foil: linear-gradient(
-		115deg,
-		var(--gold-lo) 0%,
-		var(--gold-hi) 28%,
-		var(--gold) 46%,
-		var(--gold-hi) 62%,
-		var(--gold-lo) 100%
-	);
-
-	--font-serif: 'Noto Serif KR', 'Apple SD Gothic Neo', serif;
-	--font-display: 'Cormorant Garamond', 'Noto Serif KR', serif;
-	--font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-	--font-hand: 'Nanum Pen Script', cursive;
+	--font-head: 'Hahmlet', 'Noto Serif KR', serif;
+	--font-sans: 'Gowun Dodum', 'Apple SD Gothic Neo', system-ui, sans-serif;
+	--font-label: 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif;
+	/* Nanum Pen Script, renamed in its subset (scripts/fonts.mjs) */
+	--font-hand: 'Inside Hand', cursive;
+	/* IBM Plex Mono, a sturdier Latin code face; Korean in code falls back to Nanum Gothic
+	   Coding (both renamed in their subsets) */
+	--font-mono: 'Inside Mono', 'Inside Code KR', ui-monospace, Menlo, monospace;
 
 	/* motion tokens (Emil Kowalski, emil-design-eng) */
 	--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 	--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 
-	/* fine paper grain, tinted brown */
-	--grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.36 0 0 0 0 0.27 0 0 0 0 0.16 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+	color-scheme: light;
+}
 
-	color-scheme: dark;
+/* the same notebook at night: dark paper, chalky ink, softer pens */
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #1a1b1d;
+		--surface: #202124;
+		--surface-2: #26282b;
+		--fg: #e9e6dd;
+		--fg-2: #b0ada5;
+		--fg-3: #7d7b75;
+		--line: #34363a;
+		--accent: #ff6b3d;
+		--red: #ff8a80;
+		--focus: #ff6b3d;
+		--ok: #7fd3a0;
+		--hi: rgb(214 186 40 / 0.42);
+		--hi-wash: rgb(255 220 40 / 0.17);
+		--hi-green: rgb(70 170 110 / 0.42);
+		--rule: rgb(140 170 220 / 0.14);
+		--margin: rgb(255 120 110 / 0.3);
+		color-scheme: dark;
+	}
 }
 
 *,
@@ -57,18 +75,15 @@
 
 html {
 	-webkit-text-size-adjust: 100%;
-	background: var(--room);
 }
 
 body {
 	margin: 0;
-	min-height: 100vh;
-	background:
-		radial-gradient(ellipse 70% 60% at 50% 38%, var(--room-lit), transparent 70%), var(--room);
-	color: var(--paper);
-	font-family: var(--font-serif);
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font-sans);
 	font-size: 16px;
-	line-height: 1.8;
+	line-height: 1.7;
 	word-break: keep-all;
 	overflow-wrap: anywhere;
 	-webkit-font-smoothing: antialiased;
@@ -83,22 +98,311 @@ button {
 	color: inherit;
 }
 
-:focus-visible {
-	outline: 2px solid var(--gold);
-	outline-offset: 3px;
+code,
+pre,
+textarea {
+	/* code should show the characters as typed: no `=>` → ⇒ ligatures */
+	font-variant-ligatures: none;
 }
 
-/* Shiki emits per-token colors as CSS variables; the plates are printed on paper, so only the light theme is used */
-.shiki .src span {
+code {
+	font-family: var(--font-mono);
+	font-size: 0.9em;
+}
+
+/* the learner's highlighter dragged over a printed word: the lower half only, slightly uneven */
+.marker {
+	background-image: linear-gradient(
+		100deg,
+		transparent 0 3px,
+		var(--hi) 3px calc(100% - 5px),
+		transparent
+	);
+	background-repeat: no-repeat;
+	background-size: 100% 46%;
+	background-position: 0 88%;
+	padding: 0 2px;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+/* inline code in prose, in pen colour so it stands out; zero specificity so components can restyle it */
+:where(code:not(pre code)) {
+	padding: 0.1em 0.35em;
+	border-radius: 4px;
+	background: var(--accent-soft);
+	color: var(--accent);
+	font-weight: 500;
+}
+
+:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 2px;
+}
+
+.shiki .src span[style],
+.hl span[style] {
 	color: var(--shiki-light);
 }
 
-/* Cormorant's default figures are old-style (a 1 reads like an I); use lining figures everywhere */
-body {
-	font-variant-numeric: lining-nums;
-	font-feature-settings: 'lnum' 1;
+@media (prefers-color-scheme: dark) {
+	.shiki .src span[style],
+	.hl span[style] {
+		color: var(--shiki-dark);
+	}
 }
 
-::selection {
-	background: color-mix(in oklab, var(--rubric) 28%, transparent);
+/* lengths in the code font, resolved where they are set (Code.svelte) and inherited as such */
+@property --code-ch {
+	syntax: '<length>';
+	inherits: true;
+	initial-value: 0px;
+}
+
+@property --text-x {
+	syntax: '<length>';
+	inherits: true;
+	initial-value: 0px;
+}
+
+/*
+ * The home page coming in: each part rises a little and comes into focus, one after another
+ * (`--delay`), the way a page is read from the top. Only on first load of the home page, a
+ * rare moment, so it may take its time: 800ms strong ease-out. Reduced motion: a plain fade.
+ */
+@keyframes rise {
+	from {
+		opacity: 0;
+		transform: translateY(14px);
+		filter: blur(6px);
+	}
+}
+
+.rise {
+	animation: rise 800ms var(--ease-out) var(--delay, 0ms) backwards;
+}
+
+/*
+ * Results coming in (a table an experiment fills, a list of findings): each part fades in from
+ * just above, one after another from top to bottom, so the eye reads them in order: 300ms
+ * strong ease-out, 60ms apart. `--i`: the part's place from the top; `--cascade-at`: when the
+ * first one starts. Reduced motion: the same order, faded in where they stand.
+ */
+@keyframes cascade {
+	from {
+		opacity: 0;
+		transform: translateY(-6px);
+	}
+}
+
+.cascade {
+	animation: cascade 300ms var(--ease-out) calc(var(--cascade-at, 0ms) + var(--i, 0) * 60ms)
+		backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	@keyframes cascade-fade {
+		from {
+			opacity: 0;
+		}
+	}
+
+	.cascade {
+		animation-name: cascade-fade;
+	}
+}
+
+/* until the first screen's fonts are in (app.html): nothing shown, no entrance played yet */
+.fonts-wait body {
+	visibility: hidden;
+}
+
+.fonts-wait .rise {
+	animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	@keyframes rise-fade {
+		from {
+			opacity: 0;
+		}
+	}
+
+	.rise {
+		animation: rise-fade 300ms ease var(--delay, 0ms) backwards;
+	}
+}
+
+/*
+ * A link that takes the reader somewhere ("1-1장부터 읽기", "다음 장"): the words in ink and,
+ * after them, an arrow written in pen. Under the pointer the words turn pen colour and the
+ * arrow steps forward 4px (200ms strong ease-out), the way the reader is about to go. The
+ * highlighter is not used for this: it marks words (svelte@5.0.0), it does not say "press".
+ */
+.pen-go {
+	font-family: var(--font-head);
+	font-weight: 700;
+	color: var(--fg);
+	text-decoration: none;
+	transition: color 160ms ease;
+}
+
+.pen-go::after {
+	content: '';
+	display: inline-block;
+	width: 1.5em;
+	height: 0.8em;
+	margin-left: 0.35em;
+	vertical-align: -0.02em;
+	background: var(--accent);
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'%3E%3Cpath d='M1.5 9.6C9 8.6 19 9.9 31 8.8M24.5 3.2 31.6 8.9 24 15' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+		no-repeat center / contain;
+	transition: transform 200ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.pen-go:hover {
+		color: var(--accent);
+	}
+
+	.pen-go:hover::after {
+		transform: translateX(4px);
+	}
+}
+
+.pen-go:focus-visible {
+	color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pen-go:hover::after {
+		transform: none;
+	}
+}
+
+/*
+ * A button drawn by hand ("다음", "처음으로 돌아가기"): a pen outline with uneven radii.
+ * Every one of them answers the pointer the same way: a white layer in `difference` blend
+ * mode sweeps across from the left, so the paper turns ink and the ink turns paper exactly
+ * where it has passed, the letters included. Works the same in both themes. 280ms strong
+ * ease-out; it retracts the same way. Pointer devices only; pressing scales it to 0.97.
+ *
+ * The layer has the button's own shape and is revealed with a rectangular clip-path; it is
+ * not cut to shape by `overflow: hidden` while it moves, which left the top-left corner
+ * unfilled until the sweep ended (see tests/render.spec.js).
+ */
+.pen-button {
+	position: relative;
+	isolation: isolate;
+	border: 1.5px solid var(--fg);
+	border-radius: 15px 225px 15px 255px / 255px 15px 225px 15px;
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font-hand);
+	cursor: pointer;
+	transition: transform 160ms var(--ease-out);
+}
+
+.pen-button::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border-radius: inherit;
+	background: #fff;
+	mix-blend-mode: difference;
+	pointer-events: none;
+	clip-path: inset(0 100% 0 0);
+	transition: clip-path 280ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.pen-button:not(:disabled):hover::before {
+		clip-path: inset(0 0 0 0);
+	}
+}
+
+.pen-button:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.pen-button:focus-visible::before {
+	clip-path: inset(0 0 0 0);
+}
+
+.pen-button:not(:disabled):active {
+	transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pen-button::before {
+		transition: opacity 200ms ease;
+		clip-path: none;
+		opacity: 0;
+	}
+
+	.pen-button:hover::before,
+	.pen-button:focus-visible::before {
+		clip-path: none;
+		opacity: 1;
+	}
+}
+
+/*
+ * A link-like button written in pen ("계산하는 줄 보기", "다시 보기"): underlined in pen
+ * colour; under the pointer the words, and the line under them, turn to ink (160ms). Colour
+ * only, a small motion for something pressed often. Pointer devices only.
+ */
+.pen-link {
+	padding: 0;
+	border: 0;
+	border-bottom: 1px solid currentColor;
+	background: none;
+	font-family: var(--font-hand);
+	color: var(--accent);
+	cursor: pointer;
+	transition: color 160ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.pen-link:hover {
+		color: var(--fg);
+	}
+}
+
+.pen-link:focus-visible {
+	color: var(--fg);
+}
+
+/*
+ * Words that point at code elsewhere on the page (`<Point>`, `<Look>`): underlined by hand, a
+ * slightly wavy pen stroke that repeats along the words and follows them onto the next line.
+ * Pointing at them inks the stroke fully.
+ */
+.pen-underline {
+	padding-bottom: 3px;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23d83a00' stroke-opacity='.6' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+	background-repeat: repeat-x;
+	background-position: 0 100%;
+	background-size: 40px 6px;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+	text-decoration: none;
+}
+
+.pen-underline:hover,
+.pen-underline:focus-within {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23d83a00' stroke-opacity='1' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+	.pen-underline {
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23ff6b3d' stroke-opacity='.6' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+	}
+
+	.pen-underline:hover,
+	.pen-underline:focus-within {
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23ff6b3d' stroke-opacity='1' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+	}
 }
