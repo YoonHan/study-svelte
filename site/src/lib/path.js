@@ -13,7 +13,7 @@ export const STAGES = [
 		no: 1,
 		title: '컴파일 결과 관찰',
 		chapters: [
-			{ id: '1-0', title: '직접 짠 카운터와 Svelte 컴파일 결과 비교', ready: false },
+			{ id: '1-0', title: '직접 짠 카운터와 Svelte 컴파일 결과 비교', ready: true },
 			{ id: '1-1', title: 'Svelte에서 DOM 노드를 만드는 방법', ready: true },
 			{ id: '1-2', title: '복제한 DOM 안에서 노드를 찾아가는 방법', ready: false },
 			{ id: '1-3', title: '만든 DOM을 문서에 넣는 방법', ready: false },
@@ -27,7 +27,7 @@ export const STAGES = [
 			}
 		]
 	},
-	{ no: 2, title: 'signal 시스템', chapters: [] },
+	{ no: 2, title: 'Signal 시스템', chapters: [] },
 	{ no: 3, title: 'DOM 계층', chapters: [] },
 	{ no: 4, title: '컴파일러', chapters: [] },
 	{ no: 5, title: '코드 고고학', chapters: [] }

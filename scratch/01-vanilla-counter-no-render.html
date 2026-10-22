@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <body>
+    <!--
+      튜터 질문: 아래 Svelte 컴포넌트를 프레임워크 없이 순수 JS로 구현한다면?
+
+      <script>
+        let count = $state(0);
+      </script>
+
+      <button onclick={() => count++}>{count}</button>
+      <p>두 배: {count * 2}</p>
+      <button onclick={() => count = 0}>초기화</button>
+    -->
+    <script>
+      // Q1.0 유도 질문 3의 실험: 01-vanilla-counter.html에서 증가 버튼의 클릭 핸들러가
+      // render()를 부르지 않게 바꿨습니다. count는 window.count로 확인할 수 있게 var로 선언했습니다.
+      var count = 0;
+
+      const increaseButton = createElement('button')
+      // increaseButton.innerText = count; // 실험: 초기 텍스트도 render()가 쓰도록 잠시 주석 처리
+      increaseButton.addEventListener('click', () => {
+        count++;
+      });
+
+      const doubleCount = createElement('p')
+      // doubleCount.innerText = `두 배: ${count * 2}`; // 실험: 위와 같음
+
+      const resetButton = createElement('button')
+      resetButton.innerText = '초기화';
+      resetButton.addEventListener('click', () => {
+        count = 0;
+        render();
+      });
+
+      function createElement(tag, options) {
+        return document.createElement(tag, options)
+      }
+
+      function render() {
+        increaseButton.innerText = count
+        doubleCount.innerText = `두 배: ${count * 2}`
+      }
+
+      // 실험: "문서에 먼저 붙이고 → 2초 기다린 뒤 → 값을 쓰는" 순서
+      // 1) 텍스트가 비어 있는 요소를 문서에 먼저 붙입니다.
+      document.body.appendChild(increaseButton)
+
+      console.log('문서에 붙었나?', document.body.contains(increaseButton))
+
+      document.body.appendChild(doubleCount)
+      document.body.appendChild(resetButton)
+
+      // 2) 2초 동안 아무것도 하지 않고 기다립니다.
+      const until = Date.now();
+      while (Date.now() < until) {}
+
+      // 3) 그다음에 값을 씁니다.
+      render()
+    </script>
+  </body>
+</html>

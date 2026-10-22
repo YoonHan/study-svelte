@@ -1,5 +1,10 @@
 <script>
 	import ContentsBody from '#lib/inside/ContentsBody.svelte';
+	import MetalLogo from '#lib/home/MetalLogo.svelte';
+	import { STAGES } from '#lib/path.js';
+
+	// the way in: the first chapter on the path that is ready
+	const FIRST = STAGES.flatMap((stage) => stage.chapters).find((chapter) => chapter.ready);
 	import { FONTS } from '#lib/fonts/fonts.js';
 
 	/** the title comes in a word at a time */
@@ -20,6 +25,8 @@
 
 <main class="home">
 	<header>
+		<!-- the logo in metal beside the title (above it on a phone) -->
+		<div class="mark rise" style:--delay="120ms"><MetalLogo /></div>
 		<h1>
 			{#each TITLE as word, i (i)}<span class="word rise" style:--delay="{i * 80}ms">{word}</span
 				>{i < TITLE.length - 1 ? ' ' : ''}{/each}
@@ -32,7 +39,7 @@
 		<p class="version rise" style:--delay="440ms">
 			모든 코드와 실험은 <code class="marker">svelte@5.0.0</code>을 기준으로 합니다.
 		</p>
-		<a class="start pen-go rise" style:--delay="540ms" href="/learn/1-1">1-1장부터 읽기</a>
+		<a class="start pen-go rise" style:--delay="540ms" href="/learn/{FIRST?.id}">처음부터 읽기</a>
 	</header>
 
 	<h2 class="toc rise" style:--delay="720ms">목차</h2>
@@ -56,8 +63,54 @@
 		padding: 64px 24px 120px;
 	}
 
+	/* the words on the left, the metal logo on the right; on a phone the logo comes first */
 	header {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) 200px;
+		grid-template-areas:
+			'title mark'
+			'lead mark'
+			'version mark'
+			'start mark';
+		column-gap: 28px;
+		align-items: start;
 		margin-bottom: 48px;
+	}
+
+	header h1 {
+		grid-area: title;
+	}
+
+	header .lead {
+		grid-area: lead;
+	}
+
+	header .version {
+		grid-area: version;
+	}
+
+	header .start {
+		grid-area: start;
+		justify-self: start;
+	}
+
+	.mark {
+		grid-area: mark;
+		align-self: center;
+		margin: -24px -16px -24px 0;
+	}
+
+	@media (max-width: 639px) {
+		header {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'mark' 'title' 'lead' 'version' 'start';
+		}
+
+		.mark {
+			justify-self: start;
+			width: 132px;
+			margin: -16px 0 0 -20px;
+		}
 	}
 
 	h1 {

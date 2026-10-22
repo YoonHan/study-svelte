@@ -276,7 +276,7 @@ code {
 }
 
 /*
- * A link that takes the reader somewhere ("1-1장부터 읽기", "다음 장"): the words in ink and,
+ * A link that takes the reader somewhere ("처음부터 읽기", "다음 장"): the words in ink and,
  * after them, an arrow written in pen. Under the pointer the words turn pen colour and the
  * arrow steps forward 4px (200ms strong ease-out), the way the reader is about to go. The
  * highlighter is not used for this: it marks words (svelte@5.0.0), it does not say "press".

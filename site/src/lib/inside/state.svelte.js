@@ -16,8 +16,11 @@ import { write_status } from './progress.js';
  * @property {{ line: number, text: string, point?: string, closed?: number }[]} [notes]
  * @property {Record<number, { text: string, current?: boolean, href?: string }>} [marks]
  * @property {{ key: string, label: string }} [from] the file this one is made from (shown as an arrow when both are on stage)
+ * @property {string} [beside] a file this one is compared with: when the stage shows just the two, they stand side by side
+ * @property {boolean} [badges] its lines carry job numbers (Beat `badge`): the gutter keeps room for them
+ * @property {'only'} [excerpt] on narrow screens a beat shows only its lit lines of this file (the lines of one job are scattered), not the lines around them
  *
- * @typedef {{ line: number, text?: string, point?: string, content?: import('svelte').Snippet }} Bubble a note on the code: a short `text`, or (older beats) the beat's own words; `point` is the text in the line its arrow points at
+ * @typedef {{ line: number, text?: string, point?: string, above?: boolean, content?: import('svelte').Snippet }} Bubble a note on the code: a short `text`, or (older beats) the beat's own words; `point` is the text in the line its arrow points at; `above`: it hangs over its line, the arrow pointing down
  *
  * @typedef {object} Recall a name the reader met earlier, and what to remind them of; or a
  *   variable on the code and the value it holds when the example runs
@@ -38,9 +41,13 @@ import { write_status } from './progress.js';
  * @property {number | null} bubble line of the `on` file the beat's note hangs under as a speech bubble
  * @property {string | undefined} note the short note written on the code (the beat's words stay in the flow)
  * @property {string | undefined} point the text in the line the note's arrow points at
+ * @property {boolean} [above] the note hangs over its line, the arrow pointing down
  * @property {boolean} marks whether the compiled code shows which chapter opens each line
  * @property {string | undefined} cue label of the button that reveals this beat
- * @property {string | undefined} whole a file the beat talks about as a whole ("이 코드"): the stage frames all of it
+ * @property {string | string[] | undefined} whole a file (or files) the beat talks about as a whole ("이 코드"): the stage frames all of it
+ * @property {'stagger' | undefined} enter how the files come on stage when this beat sets it: 'stagger' brings them in anew, one after another top to bottom (otherwise files already there move to their new place)
+ * @property {number | undefined} badge a number to circle beside the lit lines (which of several jobs they do)
+ * @property {Record<string, Record<number, number[]>> | undefined} badges different numbers on different lines, by file: `{ vanilla: { 2: [19, 20], 6: [6, 15] } }`
  * @property {string | undefined} id
  */
 
@@ -84,7 +91,7 @@ export class ChapterState {
 	/**
 	 * Speech bubbles a beat puts on the code with `<Say>`, by beat: one beat can say several
 	 * things, each under the line it is about.
-	 * @type {Record<number, { id: number, on: string, line: number, spot?: string, strike?: boolean, point?: string, text?: string, content?: import('svelte').Snippet }[]>}
+	 * @type {Record<number, { id: number, on: string, line: number, spot?: string, strike?: boolean, point?: string, above?: boolean, text?: string, content?: import('svelte').Snippet }[]>}
 	 */
 	says = $state({});
 
@@ -123,9 +130,10 @@ export class ChapterState {
 	 */
 	recalling = $state(null);
 
-	/** the file the focused beat talks about as a whole, if any */
+	/** the files the focused beat talks about as a whole (none: an empty list) */
 	get whole() {
-		return this.beats[this.focus]?.whole;
+		const whole = this.beats[this.focus]?.whole;
+		return whole === undefined ? [] : Array.isArray(whole) ? whole : [whole];
 	}
 
 	/** @type {Map<number, import('svelte').Snippet>} bubble content, by beat */
@@ -222,6 +230,18 @@ export class ChapterState {
 		return [this.files[0].key];
 	}
 
+	/**
+	 * Where the stage's current set of files was put up: the beat that set this view (the
+	 * first of a run of beats with the same files). With `enter: 'stagger'` the stage brings
+	 * the files in anew from there; otherwise -1, and files move to their new places.
+	 */
+	get staged() {
+		const view = this.view_of(this.focus).join();
+		let i = this.focus;
+		while (i > 0 && this.view_of(i - 1).join() === view) i -= 1;
+		return this.beats[i]?.enter === 'stagger' ? i : -1;
+	}
+
 	/** @param {number} index the file a beat talks about */
 	on_of(index) {
 		return this.beats[index]?.on ?? /** @type {string} */ (this.view_of(index).at(-1));
@@ -254,10 +274,18 @@ export class ChapterState {
 		return i;
 	}
 
+	/**
+	 * Lines the words being pointed at stand for (`<Peek>`), by file, with the number circled
+	 * beside them: while set, the stage shows these instead of the beat's own.
+	 * @type {{ lines: Record<string, number[]>, badge?: number } | null}
+	 */
+	peek = $state(null);
+
 	/** @param {string} key lines of a file to light now */
 	lit(key) {
 		const beat = this.beats[this.focus];
 		if (!beat) return [];
+		if (this.peek) return this.peek.lines[key] ?? [];
 		if (this.running?.beat === this.focus && key === this.on_of(this.focus)) {
 			return this.running.lines;
 		}
@@ -310,14 +338,14 @@ export class ChapterState {
 		const line = beat?.bubble;
 		const content = this.snippets.get(this.focus);
 		if (line != null && key === this.on_of(this.focus)) {
-			if (beat.note) result.push({ line, text: beat.note, point: beat.point });
+			if (beat.note) result.push({ line, text: beat.note, point: beat.point, above: beat.above });
 			else if (content) result.push({ line, content });
 		}
 		for (const say of this.says[this.focus] ?? []) {
 			if (say.on === key) {
 				result.push(
 					say.text
-						? { line: say.line, text: say.text, point: say.point }
+						? { line: say.line, text: say.text, point: say.point, above: say.above }
 						: { line: say.line, content: say.content }
 				);
 			}
@@ -327,7 +355,7 @@ export class ChapterState {
 
 	/**
 	 * @param {number} index
-	 * @param {{ on: string, line: number, spot?: string, strike?: boolean, point?: string, text?: string, content?: import('svelte').Snippet }} say
+	 * @param {{ on: string, line: number, spot?: string, strike?: boolean, point?: string, above?: boolean, text?: string, content?: import('svelte').Snippet }} say
 	 */
 	add_say(index, say) {
 		const id = ++this.#say_id;
@@ -388,6 +416,33 @@ export class ChapterState {
 
 	get marks() {
 		return this.beats[this.focus]?.marks ?? false;
+	}
+
+	/**
+	 * Numbers circled beside lines of a file now, line → number: the lit beat's `badges` for the
+	 * file, or else its one `badge` on every lit line.
+	 * @param {string} key
+	 * @param {number} [index] a beat (default: the one lit now)
+	 * @returns {Record<number, number>}
+	 */
+	badges(key, index) {
+		if (index === undefined && this.peek) {
+			const badge = this.peek.badge;
+			return badge ? Object.fromEntries((this.peek.lines[key] ?? []).map((n) => [n, badge])) : {};
+		}
+		const i = index ?? (this.beats[this.focus] ? this.lit_beat : -1);
+		const beat = this.beats[i];
+		if (!beat) return {};
+		/** @type {Record<number, number>} */
+		const result = {};
+		const own = beat.badges?.[key];
+		if (own) {
+			for (const [no, lines] of Object.entries(own)) for (const n of lines) result[n] = Number(no);
+		} else if (beat.badge) {
+			// the beat's own lines only: a side note (Say) on another line is not part of the job
+			for (const n of beat.lit[key] ?? []) result[n] = beat.badge;
+		}
+		return result;
 	}
 
 	/** @param {number} index */

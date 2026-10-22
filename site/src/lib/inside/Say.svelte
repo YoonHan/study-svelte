@@ -13,9 +13,22 @@
 	 * `spot`: the exact text in that line the note is about; only that part gets highlighted.
 	 * `strike`: the spot is struck through, for code the words take away ("이 `1`을 지우면").
 	 * `point`: the text in that line the arrow points at, when nothing is highlighted.
-	 * @type {{ at: number, note?: string, on?: string, spot?: string, strike?: boolean, point?: string, children?: import('svelte').Snippet }}
+	 * `above`: the note hangs over its line, the arrow pointing down at it.
+	 * `stage`: only on the stage; narrow screens show nothing for it (when the code it marks is
+	 * already shown next to it, as in an experiment).
+	 * @type {{ at: number, note?: string, on?: string, spot?: string, strike?: boolean, point?: string, above?: boolean, stage?: boolean, children?: import('svelte').Snippet }}
 	 */
-	let { at, note, on, spot, strike = false, point, children } = $props();
+	let {
+		at,
+		note,
+		on,
+		spot,
+		strike = false,
+		point,
+		above = false,
+		stage = false,
+		children
+	} = $props();
 
 	const { index, chapter } = get_beat();
 
@@ -32,6 +45,7 @@
 			spot,
 			strike,
 			point,
+			above,
 			text: note,
 			content: children
 		});
@@ -49,16 +63,19 @@
 </script>
 
 <!-- the words are also on the code as a note; here they stay, marked as a note -->
-{#if file}
+{#if file && !stage}
 	<div class="narrow">
+		<!-- a file compared with another shows just this line, with its name (as a beat's excerpt) -->
 		<Code
 			code={file.code}
-			title=""
+			title={file.excerpt === 'only' ? file.title : ''}
 			{range}
+			only={file.excerpt === 'only' ? [at] : undefined}
+			badged={file.badges}
 			lit={[at]}
 			closed={file.closed}
 			spots={spot ? [{ line: at, text: spot, strike }] : []}
-			bubbles={[note ? { line: at, text: note, point } : { line: at, content: children }]}
+			bubbles={[note ? { line: at, text: note, point, above } : { line: at, content: children }]}
 			wrap
 		/>
 	</div>

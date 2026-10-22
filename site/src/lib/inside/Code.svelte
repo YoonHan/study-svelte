@@ -13,10 +13,10 @@
 	 *   printed on the code; `closed`: the first line of the unknown part it refers to, which
 	 *   pointing at the note shows
 	 * @typedef {{ text: string, current?: boolean, href?: string }} Mark
-	 * @typedef {{ line: number, text?: string, point?: string, content?: import('svelte').Snippet }} Bubble
+	 * @typedef {{ line: number, text?: string, point?: string, above?: boolean, content?: import('svelte').Snippet }} Bubble
 	 * @typedef {Bubble & { key: string, order: number, printed: boolean, closed?: number }} Slot a note to show
 	 *   under (or above) a line: one a beat says, or one printed on the code for good
-	 * @typedef {{ type: 'line', n: number } | ({ type: 'closed' } & Closed)} Row
+	 * @typedef {{ type: 'line', n: number } | { type: 'gap', n: number } | ({ type: 'closed' } & Closed)} Row
 	 */
 
 	/**
@@ -41,7 +41,10 @@
 	 *   pointed?: 'marks' | 'closed' | null,
 	 *   pointed_from?: number | null,
 	 *   onpoint?: (at: { part: 'closed', from: number } | null) => void,
-	 *   braces?: { id: number, from: number, to: number, text: string }[]
+	 *   braces?: { id: number, from: number, to: number, text: string }[],
+	 *   only?: number[],
+	 *   badges?: Record<number, number>,
+	 *   badged?: boolean
 	 * }}
 	 */
 	let {
@@ -65,7 +68,10 @@
 		pointed = null,
 		pointed_from = null,
 		onpoint,
-		braces = []
+		braces = [],
+		only,
+		badges = {},
+		badged = false
 	} = $props();
 
 	let recall_words = $derived(recalls);
@@ -111,17 +117,37 @@
 	let stress_set = $derived(new Set(stress));
 
 	/**
-	 * How many lit lines make a long passage. A few lit lines get a highlighter stroke; a long
-	 * passage is marked quietly (bold, a red margin line) so a wall of highlighter doesn't drown
-	 * the code, and only its `stress` lines get the stroke.
+	 * How many lit lines in a row make a long passage. A few lit lines get a highlighter
+	 * stroke; a long passage (more than FEW lines one after another) is marked quietly (bold, a
+	 * red margin line) so a wall of highlighter doesn't drown the code, and only its `stress`
+	 * lines get the stroke. Lines scattered through a file stay highlighted however many there
+	 * are, so one chapter's beats look alike.
 	 */
 	const FEW = 4;
-	let many = $derived(lit_set.size > FEW);
+	let many = $derived.by(() => {
+		const sorted = [...lit_set].sort((a, b) => a - b);
+		let run = 0;
+		let longest = 0;
+		sorted.forEach((n, i) => {
+			run = i > 0 && n === sorted[i - 1] + 1 ? run + 1 : 1;
+			longest = Math.max(longest, run);
+		});
+		return longest > FEW;
+	});
 
 	/** @type {Row[]} */
 	let rows = $derived.by(() => {
 		/** @type {Row[]} */
 		const result = [];
+		// only some lines (a job's lines, scattered through the file): a gap marks what is left out
+		if (only) {
+			const picked = [...new Set(only)].sort((a, b) => a - b);
+			picked.forEach((n, i) => {
+				if (i > 0 && n > picked[i - 1] + 1) result.push({ type: 'gap', n: -n });
+				result.push({ type: 'line', n });
+			});
+			return result;
+		}
 		for (let n = first; n <= last; n += 1) {
 			const box = closed.find((c) => c.from === n);
 			if (box) {
@@ -168,14 +194,14 @@
 	let spot_of = $derived(new Map(spots.map((s) => [s.line, s])));
 
 	/** @param {Row} row */
-	const first_line = (row) => (row.type === 'line' ? row.n : row.from);
+	const first_line = (row) => (row.type === 'closed' ? row.from : row.n);
 
 	/**
 	 * @param {Row} row
 	 * @param {number} line
 	 */
 	const covers = (row, line) =>
-		row.type === 'line' ? row.n === line : row.from <= line && line <= row.to;
+		row.type === 'closed' ? row.from <= line && line <= row.to : row.n === line;
 
 	/** @type {HTMLElement | undefined} */
 	let scroller = $state();
@@ -246,8 +272,10 @@
 				Math.abs(t.top - top) < 4;
 			const below = targets.find(near(last));
 			const over = targets.find(near(first));
-			const target = below ?? over ?? targets[targets.length - 1];
-			const hang_above = !below && !!over;
+			// a note asked to hang over its line points down at the target's first row
+			const asked = slot.dataset.side === 'above';
+			const target = asked ? (over ?? targets[0]) : (below ?? over ?? targets[targets.length - 1]);
+			const hang_above = asked || (!below && !!over);
 			if (hang_above) wanted.push(slot.dataset.key ?? '');
 
 			const x = target.left - base.left + Math.min((target.right - target.left) / 2, 24);
@@ -351,7 +379,16 @@
 		const row = rows.find((r) => covers(r, target));
 		const element = row && scroller.querySelector(`[data-line="${first_line(row)}"]`);
 		if (!(element instanceof HTMLElement)) return;
-		const top = element.offsetTop - scroller.clientHeight / 6;
+		let top = element.offsetTop - scroller.clientHeight / 6;
+		// a note far below the first lit line (13 lit, the note on 36) must still be seen: then
+		// the note's line decides, and sits two thirds of the way down
+		const bubble = bubbles.at(-1);
+		const below = bubble && scroller.querySelector(`.row[data-line="${bubble.line}"]`);
+		if (below instanceof HTMLElement) {
+			const bottom = below.offsetTop + below.offsetHeight + 90;
+			if (bottom > top + scroller.clientHeight)
+				top = below.offsetTop - scroller.clientHeight * 0.66;
+		}
 		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
 		scroller.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
 	});
@@ -366,6 +403,7 @@
 		data-line={slot.line}
 		data-key={slot.key}
 		data-point={slot.point}
+		data-side={slot.above ? 'above' : undefined}
 		style:--order={slot.order}
 		style:--cols={indent_cols(slot.line)}
 	>
@@ -408,9 +446,10 @@
 	</div>
 {/snippet}
 
-<figure class="code">
+<figure class="code" class:badged>
 	{#if title !== ''}
-		<figcaption><FileIcon name={title ?? code.file} /> {title ?? code.file}</figcaption>
+		<!-- the icon from the file's own name: a title may add words after it ("(컴파일 결과)") -->
+		<figcaption><FileIcon name={code.file} /> {title ?? code.file}</figcaption>
 	{/if}
 	<div class="scroller shiki" class:wrap bind:this={scroller}>
 		<!-- svelte-ignore a11y_no_static_element_interactions -->
@@ -430,7 +469,10 @@
 				{#each slots.filter((slot) => above.includes(slot.key) && covers(row, slot.line)) as slot (slot.key)}
 					{@render note_slot(slot)}
 				{/each}
-				{#if row.type === 'line'}
+				{#if row.type === 'gap'}
+					<!-- lines left out between the ones shown -->
+					<div class="row gap" aria-hidden="true"><span class="ln">⋯</span></div>
+				{:else if row.type === 'line'}
 					{@const mark = marks[row.n]}
 					{@const spot = spot_of.get(row.n)}
 					{@const html = code.lines[row.n - 1] || ' '}
@@ -450,7 +492,11 @@
 						style:--sweep-delay={lit_set.has(row.n) ? `${lit.indexOf(row.n) * 45}ms` : undefined}
 						data-line={row.n}
 					>
-						<span class="ln">{row.n}</span>
+						<span class="ln"
+							>{#if badges[row.n]}<span class="badge" aria-label="{badges[row.n]}번 일"
+									>{badges[row.n]}</span
+								>{/if}{row.n}</span
+						>
 						<span class="src">{@html indent}<span class="ink">{@html rest}</span></span>
 						{#if mark}
 							{#if mark.href}
@@ -605,12 +651,52 @@
 	}
 
 	.ln {
+		position: relative;
 		flex: none;
 		width: var(--ln);
 		padding-right: 0.9em;
 		text-align: right;
 		color: var(--fg-3);
 		user-select: none;
+	}
+
+	/* a file whose lines carry job numbers keeps room for them beside the line numbers, always */
+	.code.badged {
+		--ln: 68px;
+	}
+
+	/*
+	 * Which of several jobs a lit line does (chapter 1-0): its number circled in pen just left of
+	 * the line number, on the line's first row.
+	 */
+	.code.badged .ln {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 6px;
+		height: var(--gap);
+	}
+
+	.badge {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 19px;
+		height: 19px;
+		border: 1.4px solid var(--accent);
+		border-radius: 50% 46% 52% 48%;
+		font-family: var(--font-label);
+		font-size: 11px;
+		font-weight: 500;
+		line-height: 1;
+		color: var(--accent);
+		background: var(--surface);
+	}
+
+	/* where lines are left out between the ones shown */
+	.row.gap .ln {
+		color: var(--fg-3);
+		letter-spacing: 1px;
 	}
 
 	.src {

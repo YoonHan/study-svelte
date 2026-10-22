@@ -17,6 +17,10 @@
 	 * - `whole`: the beat talks about a whole file ("이 코드"): the stage frames all of it and
 	 *   lights no lines.
 	 * - `marks`: shows which chapter opens each line of the compiled code.
+	 * - `enter="stagger"`: the files this beat puts on stage come in anew, one after another
+	 *   from the top, instead of the files already there moving to their new places.
+	 * - `badge`: a number circled beside the lit lines, in every file (which job they do);
+	 *   `badges`: different numbers on different lines, by file.
 	 * - `answer`: the beat starts its question's explanation.
 	 * - `cue`: label of the button that reveals this beat.
 	 * - `figure`: a picture or an experiment that goes with a note's words, kept apart from
@@ -31,8 +35,12 @@
 	 *   at?: number,
 	 *   note?: string,
 	 *   point?: string,
-	 *   whole?: string,
+	 *   above?: boolean,
+	 *   whole?: string | string[],
 	 *   marks?: boolean,
+	 *   badge?: number,
+	 *   enter?: 'stagger',
+	 *   badges?: Record<string, Record<number, number[]>>,
 	 *   answer?: boolean,
 	 *   cue?: string,
 	 *   id?: string,
@@ -49,8 +57,12 @@
 		at,
 		note,
 		point,
+		above = false,
 		whole,
 		marks = false,
+		badge,
+		badges,
+		enter,
 		answer = false,
 		cue,
 		id,
@@ -83,8 +95,12 @@
 			bubble: at ?? null,
 			note,
 			point,
+			above,
 			whole,
 			marks,
+			badge,
+			badges,
+			enter,
 			cue: cue ?? (answer ? '해설 보기' : undefined),
 			id
 		},
@@ -109,7 +125,15 @@
 		chapter.view_of(index).flatMap((key) => {
 			const file = chapter.file(key);
 			const own = chapter.beats[index].lit[key] ?? [];
-			if (!file || own.length === 0) return [];
+			if (!file) return [];
+			// a beat about whole files ("함께 놓아 보겠습니다") shows each file's name and first lines
+			if (own.length === 0) {
+				const wholes = whole === undefined ? [] : [whole].flat();
+				if (!wholes.includes(key)) return [];
+				const [from, to] = file.range ?? [1, file.code.lines.length];
+				const head = /** @type {[number, number]} */ ([from, Math.min(to, from + 5)]);
+				return [{ file, range: head, lit: [], bubbles: [], only: undefined, head: true }];
+			}
 			const [from, to] = file.range ?? [1, file.code.lines.length];
 			const range = /** @type {[number, number]} */ ([
 				Math.max(from, Math.min(...own) - 2),
@@ -119,7 +143,16 @@
 				at !== undefined && key === target
 					? [note ? { line: at, text: note, point } : { line: at, content: children }]
 					: [];
-			return [{ file, range, lit: own, bubbles }];
+			return [
+				{
+					file,
+					range,
+					lit: own,
+					bubbles,
+					only: file.excerpt === 'only' ? own : undefined,
+					head: false
+				}
+			];
 		})
 	);
 
@@ -132,9 +165,14 @@
 		chapter.scroll_to = -1;
 		const node = slot;
 		const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-		requestAnimationFrame(() =>
-			node.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : 'auto' })
-		);
+		// a beat taller than most of the screen (a section with its map) is read from its top
+		requestAnimationFrame(() => {
+			const tall = node.offsetHeight > innerHeight * 0.7;
+			node.scrollIntoView({
+				block: tall ? 'start' : 'center',
+				behavior: smooth ? 'smooth' : 'auto'
+			});
+		});
 	});
 </script>
 
@@ -149,7 +187,8 @@
 			onpointerdown={() => chapter.show(index)}
 			onfocusin={() => chapter.show(index)}
 		>
-			{#if answer}<p class="label">해설</p>{/if}
+			<!-- the explanation begins: a sticky note like the question's flag, in orange -->
+			{#if answer}<p class="label"><span class="answer-flag">해설</span></p>{/if}
 			{#if at !== undefined}
 				<Noted on={target} line={at} {note}>
 					{@render children()}
@@ -161,10 +200,14 @@
 			{/if}
 			{#each excerpts as excerpt (excerpt.file.key)}
 				<div class="narrow excerpt">
+					<!-- excerpts of two compared files (only their lit lines) say which file they are from -->
 					<Code
 						code={excerpt.file.code}
-						title=""
+						title={excerpt.only || excerpt.head ? excerpt.file.title : ''}
 						range={excerpt.range}
+						only={excerpt.only}
+						badges={chapter.badges(excerpt.file.key, index)}
+						badged={excerpt.file.badges}
 						lit={excerpt.lit}
 						stress={excerpt.file.key === target ? stress : []}
 						closed={excerpt.file.closed}
@@ -249,6 +292,7 @@
 	}
 
 	.slot {
+		scroll-margin-top: 24px;
 		scroll-margin: 96px 0;
 	}
 
@@ -362,11 +406,33 @@
 	}
 
 	.label {
-		margin: 0 0 2px !important;
+		margin: 0 0 10px !important;
+		line-height: 1;
+	}
+
+	/*
+	 * The same sticky note as a question's flag ("질문 N", Ask.svelte), in orange: where the
+	 * answer starts reads apart from the headings (in pen colour) that follow it.
+	 */
+	.answer-flag {
+		display: inline-block;
+		padding: 2px 10px 4px;
+		border-radius: 2px 3px 0 0;
+		background: #ffb27f;
 		font-family: var(--font-hand);
-		font-size: 21px;
-		line-height: 1.3;
-		color: var(--accent);
+		font-size: 18px;
+		line-height: 1.1;
+		color: #24272b;
+		transform: rotate(-1.5deg);
+		box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.answer-flag {
+			background: #e08a52;
+			color: #1d1f22;
+			box-shadow: 0 1px 5px rgb(0 0 0 / 0.4);
+		}
 	}
 
 	/* a code example between paragraphs */

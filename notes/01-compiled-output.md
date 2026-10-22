@@ -10,10 +10,203 @@
 
 ### Q1.0 [관찰] 직접 짠 카운터와 Svelte의 컴파일 결과는 어떻게 다른가
 
-아직 유도 질문을 기록하지 않았습니다. 실험 파일은 이미 있습니다.
+비교하는 파일은 다음과 같습니다.
 
-- 직접 짠 카운터: `scratch/01-vanilla-counter.html`
-- 원본과 컴파일 결과: `scratch/01-counter.svelte`, `scratch/compiled/01-counter.compiled.js`
+- 원본: `scratch/01-counter.svelte`
+- 직접 짠 카운터: `scratch/01-vanilla-counter.html` (2026-10-12에 작성. 뒤에 붙은 "문서에 먼저 넣고 2초 뒤에 값 쓰기"는 별도의 실험이므로 비교에서 뺍니다.)
+- 컴파일 결과: `scratch/compiled/01-counter.compiled.js`
+
+#### 1. 직접 짠 카운터가 카운터를 화면에 띄우고 동작하게 만들기까지 하는 일을 종류별로 나누면 몇 가지일까요?
+
+<details>
+<summary>해설</summary>
+
+코드에 나오는 DOM API를 기준으로 나누면 네 가지입니다.
+
+| 하는 일 | 직접 짠 코드 |
+|---|---|
+| 요소 만들기 | `createElement('button')`, `createElement('p')` |
+| 텍스트 쓰기 | `.innerText = …` |
+| 이벤트 핸들러 붙이기 | `.addEventListener('click', …)` |
+| 요소를 문서에 넣기 | `document.body.appendChild(…)` |
+
+> 근거: `scratch/01-vanilla-counter.html:19-52`(요소 만들기 19, 26, 29행 / 텍스트 쓰기 30, 41-42행 / 이벤트 21, 31행 / 문서에 넣기 47-52행)
+
+텍스트 쓰기와 이벤트 핸들러 붙이기는 둘 다 만든 요소를 손보는 일이지만, 하나는 "무엇을 보여 줄지"를, 다른 하나는 "클릭에 어떻게 반응할지"를 정합니다. 컴파일 결과에서도 서로 다른 장치가 맡으므로 따로 둡니다.
+
+> 처음 세운 가설: 네 가지로 나눈 뒤, 텍스트 쓰기와 이벤트 핸들러 붙이기를 한 종류로 보면 세 가지일 수도 있다고 생각했습니다. 위의 이유로 네 가지로 두었습니다.
+
+</details>
+
+#### 2. `let count = 0;`과, 클릭 핸들러에서 `count`를 바꾸는 부분은 네 가지 중 어디에도 속하지 않습니다. 이 부분들은 무슨 일을 할까요?
+
+<details>
+<summary>해설</summary>
+
+화면에 보여 줄 상태 값을 선언하고 바꾸는 일입니다. `let count = 0;`이 상태를 선언하면서 처음 값을 정하고, 클릭 핸들러의 `count++`와 `count = 0`이 그 값을 바꿉니다. 목록에 다섯 번째로 더합니다.
+
+| 하는 일 | 직접 짠 코드 |
+|---|---|
+| 상태 선언과 변경 | `let count = 0`, `count++`, `count = 0` |
+
+> 근거: `scratch/01-vanilla-counter.html:17, 22, 32`
+
+</details>
+
+#### 3. 증가 버튼의 클릭 핸들러에서 `render();` 줄을 지우면 화면의 카운터는 어떻게 될까요?
+
+<details>
+<summary>해설</summary>
+
+화면은 바뀌지 않습니다. 다만 상태 값 자체(`count` 변수)는 클릭할 때마다 올라갑니다. 값이 바뀌는 것과 화면에 다시 쓰는 것은 별개의 일이고, 직접 짠 코드에서는 개발자가 상태를 바꿀 때마다 `render()`를 불러서 둘을 손으로 이어 줍니다. 목록에 여섯 번째로 더합니다.
+
+| 하는 일 | 직접 짠 코드 |
+|---|---|
+| 상태가 바뀌면 화면을 다시 그리기 | 클릭 핸들러 안의 `render()` 호출 |
+
+> 근거: 실험 `scratch/01-vanilla-counter-no-render.html`(증가 버튼의 핸들러에서 `render()`를 뺀 사본)을 브라우저에서 세 번 클릭한 결과
+>
+> | | 화면의 버튼 글자 | `count` 변수 |
+> |---|---|---|
+> | 처음 | 0 | 0 |
+> | 클릭 1번 뒤 | 0 | 1 |
+> | 클릭 2번 뒤 | 0 | 2 |
+> | 클릭 3번 뒤 | 0 | 3 |
+
+> 처음 세운 가설: "화면에서 상태값이 업데이트되지 않는다"고 예측했고, 그대로였습니다. 실험으로 상태 값 자체는 바뀐다는 점을 덧붙였습니다.
+
+</details>
+
+#### 4. 여섯 가지 일을 컴파일 결과에서는 각각 어느 줄이 할까요?
+
+<details>
+<summary>해설</summary>
+
+함수 이름과 위치로 짐작해서 짝을 지으면 다음과 같습니다. 아래 5~7번 유도 질문에서 채운 줄까지 합친 표입니다.
+
+| 하는 일 | 직접 짠 코드 | 컴파일 결과 |
+|---|---|---|
+| 1. 요소 만들기 | `createElement(…)` | `$.template(…)`(6행)에 세 요소의 HTML을 문자열로 담아 두고, `root()`(10행)를 불러 그 요소들을 한꺼번에 얻음 |
+| 2. 텍스트 쓰기 | `.innerText = …` | `$.template_effect` 콜백 안의 `$.set_text(…)`(29-30행) |
+| 3. 이벤트 핸들러 붙이기 | `.addEventListener(…)` | `on_click`, `on_click_1`(4-5행)을 `button.__click`, `button_1.__click`(13, 26행)에 저장 |
+| 4. 요소를 문서에 넣기 | `appendChild(…)` | `$.append($$anchor, fragment)`(33행) |
+| 5. 상태 선언과 변경 | `let count = 0`, `count++`, `count = 0` | `$.state(0)`(9행), 핸들러 안의 `$.update(count)`, `$.set(count, 0)`(4-5행) |
+| 6. 상태가 바뀌면 화면을 다시 그리기 | 핸들러 안의 `render()` 호출 | 없음. `$.template_effect`(28-31행)의 콜백이 다시 실행됨 |
+
+> 근거: `scratch/compiled/01-counter.compiled.js:4-36`
+
+텍스트 쓰기(2)와 다시 그리기(6)가 컴파일 결과에서는 한 곳에 모여 있습니다. 직접 짠 코드는 텍스트를 쓰는 `render()`를 만들어 두고 상태를 바꿀 때마다 직접 불렀지만, 컴파일 결과는 텍스트를 쓰는 코드를 `$.template_effect`에 한 번 등록해 둡니다.
+
+</details>
+
+#### 5. 표에서 아직 짝을 못 찾은 줄(`on_click`, `root()`, `$.first_child`, `$.child`, `$.reset`, `$.sibling`, `$.delegate`)은 각각 어느 행에 속할까요?
+
+<details>
+<summary>해설</summary>
+
+- `var fragment = root();`(10행)는 템플릿 문자열에 담긴 요소들을 실제 노드로 얻어 오는 줄로 보이므로 1번(요소 만들기)입니다. 문자열에서 노드를 어떻게 만드는지는 1-1장에서 다룹니다.
+- `on_click`, `on_click_1`(4-5행)은 이벤트 핸들러 함수이므로 3번입니다. 다만 그 몸통은 5번 일을 합니다(6번 유도 질문).
+- `$.first_child`, `$.child`, `$.reset`, `$.sibling`(11-24행)은 여섯 가지 어디에도 속하지 않습니다. 직접 짠 코드에는 짝이 없는, 컴파일 결과에만 있는 일입니다(8번 유도 질문에서 다룹니다).
+- `$.delegate(["click"])`(36행)도 짝을 찾지 못한 채로 남겨 두었습니다.
+
+> 근거: `scratch/compiled/01-counter.compiled.js:4-5, 10-24, 36`
+
+</details>
+
+#### 6. `on_click`의 몸통 `$.update(count)`는 직접 짠 코드의 어느 줄과 같은 일을 할까요?
+
+<details>
+<summary>해설</summary>
+
+`count++`와 같은 일입니다. `$.update`는 상태의 현재 값을 읽어서 1 큰 값을 `set`으로 넣습니다. `on_click_1`의 `$.set(count, 0)`은 `count = 0`에 해당합니다. 둘 다 5번(상태 선언과 변경) 행에 들어갑니다.
+
+> 근거: `svelte/packages/svelte/src/internal/client/runtime.js:969-972`(`update`가 `set(signal, value + d)`를 호출)
+
+> 처음 세운 가설: 증가 버튼의 클릭 핸들러 전체(`count++`와 `render()`)에 해당한다고 보았습니다. `count++`에 해당하는 것은 맞지만, `on_click`에는 `render()`에 해당하는 줄이 없습니다. 그 일은 7번 유도 질문에서 찾았습니다.
+
+</details>
+
+#### 7. 컴파일 결과는 `render()`를 직접 부르지 않습니다. 그럼 `count`가 바뀌었을 때 새 값을 화면에 쓰는 것은 무엇일까요?
+
+<details>
+<summary>해설</summary>
+
+`$.template_effect`에 넘긴 콜백이 다시 실행되면서 `$.set_text`로 새 값을 씁니다. 직접 짠 코드는 상태를 바꾼 사람이 `render()`를 불러야 하지만, 컴파일 결과에서는 "다시 실행할 코드"를 `$.template_effect`에 미리 등록해 두고 상태가 바뀌면 그 코드가 다시 실행됩니다. `template_effect`는 받은 함수로 effect(`block`)를 만듭니다.
+
+> 근거: `scratch/compiled/01-counter.compiled.js:28-31`, `svelte/packages/svelte/src/internal/client/reactivity/effects.js:322-328`
+
+effect가 `count`가 바뀐 것을 어떻게 아는지는 1-4장과 2단계(signal 시스템)에서 다룹니다.
+
+</details>
+
+#### 8. `$.first_child`, `$.child`, `$.sibling`은 무엇을 하려는 것이고, 직접 짠 코드에는 왜 이런 줄이 필요 없을까요?
+
+<details>
+<summary>해설</summary>
+
+`root()`가 한꺼번에 반환한 요소 묶음에서, 다룰 노드를 하나씩 찾아 변수에 담는 일입니다.
+
+- `$.first_child(fragment)`: 묶음의 첫 요소(증가 버튼)
+- `$.sibling(button, 2)`: 그 요소에서 옆으로 두 칸 간 노드(문단)
+- `$.child(button)`: 버튼 안의 텍스트 노드(나중에 값을 쓸 자리)
+
+직접 짠 코드는 `createElement`가 만든 요소를 그 자리에서 바로 변수에 담기 때문에 찾을 필요가 없습니다. 컴파일 결과는 템플릿 문자열 하나에 세 요소를 담아 두고 `root()`로 한꺼번에 얻기 때문에, 그중에서 필요한 노드를 찾아가야 합니다. 이 일은 직접 짠 코드에는 없는 일곱 번째 일입니다.
+
+| 하는 일 | 직접 짠 코드 | 컴파일 결과 |
+|---|---|---|
+| 7. 다룰 노드를 찾아가기 | 없음 (만들 때 이미 변수에 있음) | `$.first_child`, `$.child`, `$.sibling`(11-24행) |
+
+> 근거: `scratch/compiled/01-counter.compiled.js:10-24`
+
+함께 나오는 `$.reset`은 아직 무엇을 하는지 모르는 줄로 남겨 두고, 노드를 찾아가는 방법은 1-2장에서 다룹니다.
+
+</details>
+
+#### 9. 컴파일 결과에는 `addEventListener`가 없고 `__click` 속성에 핸들러를 저장하기만 합니다. 마지막 줄 `$.delegate(["click"])`은 무슨 일을 할까요?
+
+<details>
+<summary>해설</summary>
+
+클릭 처리를 버튼마다 하지 않고 한 곳에 맡기는(위임하는) 일입니다.
+
+- `$.delegate(["click"])`은 `"click"`이라는 이벤트 이름을 전역 목록에 등록합니다. 컴포넌트의 리스너가 아니라 이벤트 종류를 등록합니다.
+- 앱을 마운트할 때, 등록된 이벤트 이름마다 마운트한 자리(`target`)와 `document`에 리스너를 하나씩 붙입니다. 버튼에는 붙이지 않습니다.
+- 클릭하면 그 리스너가 클릭된 요소부터 부모 쪽으로 올라가며 `__click` 속성을 찾고, 찾으면 저장된 핸들러를 `count`와 함께 호출합니다.
+
+그래서 표의 3번(이벤트 핸들러 붙이기)은 컴파일 결과에서 `__click`(핸들러를 저장할 자리)과 `$.delegate`(공용 리스너)의 짝입니다.
+
+| 하는 일 | 직접 짠 코드 | 컴파일 결과 |
+|---|---|---|
+| 3. 이벤트 핸들러 붙이기 | 버튼마다 `.addEventListener('click', …)` | 버튼마다 `__click`에 핸들러 저장(13, 26행) + `$.delegate(["click"])`(36행)로 공용 리스너 등록 |
+
+> 근거: `svelte/packages/svelte/src/internal/client/dom/elements/events.js:123-131`(`delegate`), `svelte/packages/svelte/src/internal/client/render.js:194-219`(마운트할 때 `target`과 `document`에 리스너), `svelte/packages/svelte/src/internal/client/dom/elements/events.js:210-228`(부모 쪽으로 올라가며 `__click`을 찾아 호출)
+
+> 처음 세운 가설: "이 컴포넌트에서 등록한 모든 이벤트 리스너의 처리를 전역으로 위임한다"고 보았습니다. 위임한다는 것은 맞습니다. 다만 등록하는 것은 이벤트 종류(`"click"`)이고, 리스너는 마운트한 자리와 `document`에 붙습니다. 왜 이렇게 하는지는 1-6장에서 다룹니다.
+
+</details>
+
+#### 10. 직접 짠 코드와 컴파일 결과가 다른 일곱 군데에 대해, "Svelte는 왜 이렇게 했을까?"라는 질문을 하나씩 적는다면?
+
+<details>
+<summary>해설</summary>
+
+일곱 가지 차이와 질문, 그 질문을 다루는 장은 다음과 같습니다. 1단계의 나머지 장은 이 질문들에 하나씩 답합니다.
+
+| 차이 | 직접 짠 코드 | 컴파일 결과 | 왜 질문 | 다루는 장 |
+|---|---|---|---|---|
+| 1. 요소 만들기 | `createElement`로 하나씩 | 템플릿 문자열 하나에서 세 요소를 한꺼번에(`$.template`, `root()`) | 왜 `createElement`라는 DOM 생성 API를 쓰지 않고 템플릿 문자열로 요소를 만들까? | 1-1 |
+| 7. 노드 찾아가기 | 없음 | `$.first_child`, `$.child`, `$.sibling` | 왜 노드를 찾아가는 코드가 따로 있을까? | 1-2 |
+| 4. 문서에 넣기 | 요소마다 `appendChild` | `$.append($$anchor, fragment)` 한 번 | 왜 요소마다 `appendChild`로 넣지 않을까? | 1-3 |
+| 2. 텍스트 쓰기 | `.innerText = …` | `$.set_text(…)` | 왜 `.innerText`를 쓰지 않을까? (`$.set_text` 안에서 쓸 수도 있겠지만) | 1-4 |
+| 6. 다시 그리기 | `render()`를 직접 호출 | `$.template_effect`의 콜백이 알아서 다시 실행됨 | 왜 다시 그리기를 직접 부르지 않고, 그리는 코드가 알아서 다시 실행되게 했을까? | 1-4 |
+| 5. 상태 선언과 변경 | `let count = 0`, `count++` | 원본의 `$state(0)` → `$.state(0)`, `$.update(count)` | 왜 상태를 그냥 `let` 변수로 두지 않고, `$state`로 선언하게 한 뒤 `$.state()`와 `$.update()`로 바꿀까? | 1-5 (원리는 2단계) |
+| 3. 이벤트 붙이기 | 버튼마다 `addEventListener` | 버튼마다 `__click`에 저장 + `$.delegate`로 공용 리스너 | 왜 버튼마다 `__click`이라는 속성에 핸들러를 저장하고, 공용 리스너로 처리할까? | 1-6 |
+
+> 근거: 1~9번 유도 질문의 해설, 장 번호는 `curriculum/01-compiled-output.md`의 "학습 경로" 표
+
+> 처음 세운 가설: 6번(다시 그리기)은 5번(상태 선언과 변경)과 이어지는 질문이라고 보고 따로 적지 않았습니다. 5번은 "상태를 어떻게 선언하고 바꾸나", 6번은 "다시 그리기를 누가 부르나"라서 다루는 장이 달라, 질문을 따로 두었습니다. 5번의 `$.state()`를 rune이라고 불렀는데, rune은 원본의 `$state`이고 `$.state()`는 그 rune이 바뀌어 들어간 런타임 함수입니다.
+
+</details>
 
 ---
 

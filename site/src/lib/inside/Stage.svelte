@@ -42,70 +42,82 @@
 		typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 </script>
 
-<div class="stage" aria-label="코드">
-	{#each files as file, i (file.key)}
-		{@const lit = chapter.lit(file.key)}
-		{@const bubbles = chapter.bubbles(file.key)}
-		{@const made = !!file.from && files[i - 1]?.key === file.from.key}
-		<!--
+<!-- two files compared (one is `beside` the other) stand side by side when they are all there is -->
+<div
+	class="stage"
+	class:side={files.length === 2 && files[1].beside === files[0].key}
+	aria-label="코드"
+>
+	<!-- a beat may bring its files in anew, one after another (enter="stagger"); otherwise files move -->
+	{#key chapter.staged}
+		{#each files as file, i (file.key)}
+			{@const lit = chapter.lit(file.key)}
+			{@const bubbles = chapter.bubbles(file.key)}
+			{@const made = !!file.from && files[i - 1]?.key === file.from.key}
+			<!--
 			Files already on stage move to their new place (FLIP) when another file comes in, so
 			nothing jumps: a layout change is always animated from where it was.
 		-->
-		<div
-			class="item"
-			class:grow={(file.range?.[1] ?? file.code.lines.length) - (file.range?.[0] ?? 1) > 12}
-			animate:flip={{ duration: reduce ? 0 : 420, easing: quintOut }}
-		>
-			{#if made}
-				<!-- this file is made from the one above it: a hand-drawn arrow says how -->
-				<div class="made-from" aria-hidden="true">
-					<svg viewBox="0 0 30 44"
-						><path class="shaft" pathLength="1" d="M15 2 C 13 14, 17 26, 15 38" /><path
-							class="head"
-							pathLength="1"
-							d="M8 31 L15 40 L22 31"
-						/></svg
-					>
-					<span>{file.from?.label}</span>
-				</div>
-			{/if}
 			<div
-				class="file"
-				class:made
-				class:whole={chapter.whole === file.key}
-				class:aside={chapter.whole
-					? chapter.whole !== file.key
-					: any_lit && lit.length === 0 && bubbles.length === 0}
+				class="item"
+				class:staggered={chapter.staged >= 0}
+				style:--i={i}
+				class:grow={(file.range?.[1] ?? file.code.lines.length) - (file.range?.[0] ?? 1) > 12}
+				animate:flip={{ duration: reduce ? 0 : 420, easing: quintOut }}
 			>
-				<Code
-					code={file.code}
-					title={file.title}
-					range={file.range}
-					closed={file.closed}
-					notes={(file.notes ?? []).filter((note) => lit.includes(note.line))}
-					marks={chapter.marks ? file.marks : undefined}
-					{lit}
-					stress={chapter.stress(file.key)}
-					spots={chapter.spots(file.key)}
-					{bubbles}
-					follow
-					wrap
-					linked={chapter.linked?.from === 'text' && chapter.linked.on === file.key
-						? chapter.linked.line
-						: null}
-					linking={chapter.linked?.from === 'text'}
-					onlink={(line) =>
-						line === null ? chapter.unlink() : chapter.link(file.key, line, 'code')}
-					recalls={chapter.recall_words(file.key)}
-					onrecall={(at) => (chapter.recalling = at && { ...at, on: file.key })}
-					pointed={chapter.pointing?.on === file.key ? chapter.pointing.part : null}
-					pointed_from={chapter.pointing?.on === file.key ? chapter.pointing.from : null}
-					onpoint={(at) => (chapter.pointing = at && { on: file.key, ...at })}
-					braces={chapter.braces(file.key)}
-				/>
+				{#if made}
+					<!-- this file is made from the one above it: a hand-drawn arrow says how -->
+					<div class="made-from" aria-hidden="true">
+						<svg viewBox="0 0 30 44"
+							><path class="shaft" pathLength="1" d="M15 2 C 13 14, 17 26, 15 38" /><path
+								class="head"
+								pathLength="1"
+								d="M8 31 L15 40 L22 31"
+							/></svg
+						>
+						<span>{file.from?.label}</span>
+					</div>
+				{/if}
+				<div
+					class="file"
+					class:made
+					class:whole={chapter.whole.includes(file.key)}
+					class:aside={chapter.whole.length
+						? !chapter.whole.includes(file.key)
+						: any_lit && lit.length === 0 && bubbles.length === 0}
+				>
+					<Code
+						code={file.code}
+						title={file.title}
+						range={file.range}
+						closed={file.closed}
+						notes={(file.notes ?? []).filter((note) => lit.includes(note.line))}
+						marks={chapter.marks ? file.marks : undefined}
+						{lit}
+						stress={chapter.stress(file.key)}
+						spots={chapter.spots(file.key)}
+						{bubbles}
+						follow
+						wrap
+						linked={chapter.linked?.from === 'text' && chapter.linked.on === file.key
+							? chapter.linked.line
+							: null}
+						linking={chapter.linked?.from === 'text'}
+						onlink={(line) =>
+							line === null ? chapter.unlink() : chapter.link(file.key, line, 'code')}
+						recalls={chapter.recall_words(file.key)}
+						onrecall={(at) => (chapter.recalling = at && { ...at, on: file.key })}
+						pointed={chapter.pointing?.on === file.key ? chapter.pointing.part : null}
+						pointed_from={chapter.pointing?.on === file.key ? chapter.pointing.from : null}
+						onpoint={(at) => (chapter.pointing = at && { on: file.key, ...at })}
+						braces={chapter.braces(file.key)}
+						badges={chapter.badges(file.key)}
+						badged={file.badges}
+					/>
+				</div>
 			</div>
-		</div>
-	{/each}
+		{/each}
+	{/key}
 
 	{#if chapter.recalling}
 		{@const recall = chapter.lookup(chapter.recalling.on, chapter.recalling.word)}
@@ -139,6 +151,23 @@
 		padding: 20px 0;
 	}
 
+	/* two files compared: side by side, each the stage's full height */
+	.stage.side {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		align-content: stretch;
+		gap: 14px;
+	}
+
+	.stage.side .item {
+		min-height: 0;
+	}
+
+	/* two listings in the room of one: a little smaller type, so fewer lines wrap */
+	.stage.side :global(.listing) {
+		font-size: 12.5px;
+	}
+
 	.item {
 		display: flex;
 		flex-direction: column;
@@ -148,6 +177,26 @@
 
 	.item.grow {
 		flex: 1 1 0;
+	}
+
+	/*
+	 * Files brought in anew (enter="stagger"): each fades in where it stands, top to bottom,
+	 * 360ms apart, so the eye takes in one before the next. 320ms ease-out; no movement.
+	 */
+	.item.staggered {
+		animation: stage-in 320ms var(--ease-out) calc(var(--i) * 360ms) backwards;
+	}
+
+	@keyframes stage-in {
+		from {
+			opacity: 0;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.item.staggered {
+			animation-delay: 0ms;
+		}
 	}
 
 	/*

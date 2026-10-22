@@ -24,6 +24,7 @@
 		"@sveltejs/kit": "^3.0.0",
 		"@sveltejs/vite-plugin-svelte": "^7.2.0",
 		"@types/node": "^24.19.2",
+		"@types/three": "^0.186.0",
 		"mdsvex": "^0.12.7",
 		"pngjs": "^7.0.0",
 		"prettier": "^3.8.3",
@@ -34,6 +35,7 @@
 		"svelte": "^5.57.1",
 		"svelte-5.0.0": "npm:svelte@5.0.0",
 		"svelte-check": "^4.6.0",
+		"three": "^0.186.1",
 		"typescript": "^6.0.3",
 		"vite": "^8.3.0"
 	},

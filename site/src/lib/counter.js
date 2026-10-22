@@ -37,3 +37,36 @@ const DOORS = [
 export function door_of(line) {
 	return DOORS.find(([pattern]) => pattern.test(line))?.[1];
 }
+
+/**
+ * The same counter written by hand with the DOM API, no framework (chapter 1-0 compares it
+ * with the compiled output). From the learner's own version (scratch/01-vanilla-counter.html),
+ * without its later experiment and with `document.createElement` called directly.
+ */
+export const VANILLA_SOURCE = `let count = 0;
+
+const increaseButton = document.createElement('button');
+increaseButton.addEventListener('click', () => {
+  count++;
+  render();
+});
+
+const doubleCount = document.createElement('p');
+
+const resetButton = document.createElement('button');
+resetButton.innerText = '초기화';
+resetButton.addEventListener('click', () => {
+  count = 0;
+  render();
+});
+
+function render() {
+  increaseButton.innerText = count;
+  doubleCount.innerText = \`두 배: \${count * 2}\`;
+}
+
+document.body.appendChild(increaseButton);
+document.body.appendChild(doubleCount);
+document.body.appendChild(resetButton);
+render();
+`;

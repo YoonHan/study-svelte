@@ -1096,7 +1096,7 @@
 		font-family: var(--font-head);
 		font-size: 19px;
 		font-weight: 700;
-		color: var(--fg);
+		/* no colour of its own: .pen-go (app.css) colours it and turns it the accent on hover */
 	}
 
 	a.go {
