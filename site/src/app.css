@@ -371,7 +371,7 @@ code {
 }
 
 /*
- * A button drawn by hand ("다음", "처음으로 돌아가기"): a pen outline with uneven radii.
+ * A button drawn by hand ("다음", "이 장 처음부터 다시 읽기"): a pen outline with uneven radii.
  * Every one of them answers the pointer the same way: a white layer in `difference` blend
  * mode sweeps across from the left, so the paper turns ink and the ink turns paper exactly
  * where it has passed, the letters included. Works the same in both themes. 280ms strong

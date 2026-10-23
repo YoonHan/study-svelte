@@ -332,16 +332,15 @@ async function silent_controls(page) {
 			box = await control.boundingBox();
 		}
 		if (!box || box.width < 2 || box.height < 2) continue;
-		if (
-			box.y < 0 ||
-			box.x < 0 ||
-			box.y + box.height > view.height ||
-			box.x + box.width > view.width
-		) {
+		// a control may sit partly past the screen's edge on purpose (the index tabs tuck in):
+		// compare what of it is on screen, as long as most of it is
+		const x = Math.max(0, box.x - 2);
+		const right = Math.min(view.width, box.x + box.width + 2);
+		if (box.y < 0 || box.y + box.height > view.height || right - x < box.width * 0.6) {
 			silent.push(`${name} (could not be brought into view)`);
 			continue;
 		}
-		const clip = { x: box.x - 2, y: box.y - 2, width: box.width + 4, height: box.height + 4 };
+		const clip = { x, y: box.y - 2, width: right - x, height: box.height + 4 };
 		const before = await page.screenshot({ clip });
 		await control.hover();
 		await page.waitForTimeout(400);
@@ -1288,4 +1287,87 @@ for (const colorScheme of /** @type {const} */ (['light', 'dark'])) {
 		expect(ratio).toBeGreaterThanOrEqual(7);
 		await context.close();
 	});
+}
+
+/*
+ * Home and the contents are always one step away in a chapter: two index tabs on the left
+ * edge of the page, there at the top and halfway down alike, clear of the code on a wide
+ * screen. The home tab goes home; the other opens the contents drawer, which has a way home
+ * too.
+ */
+for (const ch of CHAPTERS) {
+	for (const width of [1280, 390]) {
+		test(`${ch.url} at ${width}px: the index tabs go home and open the contents`, async ({
+			browser
+		}) => {
+			const context = await browser.newContext({
+				viewport: { width, height: 844 },
+				...(width < 1024 ? { isMobile: true, hasTouch: true } : {})
+			});
+			const page = await context.newPage();
+			await open(page, 999, ch);
+			for (const at of [0, 0.5]) {
+				await page.evaluate((f) => scrollTo(0, document.body.scrollHeight * f), at);
+				await page.waitForTimeout(400);
+				const place = await page.evaluate(() => {
+					const tabs = [...document.querySelectorAll('.tabs .tab')].map((e) =>
+						e.getBoundingClientRect()
+					);
+					const items = [...document.querySelectorAll('.stage .item')]
+						.map((e) => e.getBoundingClientRect())
+						.filter((r) => r.width > 0);
+					return {
+						count: tabs.length,
+						top: Math.min(...tabs.map((r) => r.top)),
+						right: Math.max(...tabs.map((r) => r.right)),
+						stage: items.length ? Math.min(...items.map((r) => r.left)) : Infinity
+					};
+				});
+				expect(place.count, 'two tabs').toBe(2);
+				expect(place.top, 'in view').toBeGreaterThan(0);
+				expect(place.right, 'clear of the code').toBeLessThanOrEqual(place.stage);
+				const flow = await page.evaluate(
+					() =>
+						/** @type {HTMLElement} */ (document.querySelector('.flow')).getBoundingClientRect()
+							.left
+				);
+				expect(flow - place.right, 'a gap before the words').toBeGreaterThanOrEqual(8);
+				// a press on the words' first letter, beside a tab, is the words', not the tab's
+				const taken = await page.evaluate(() => {
+					const flow = /** @type {HTMLElement} */ (
+						document.querySelector('.flow')
+					).getBoundingClientRect();
+					return [...document.querySelectorAll('.tabs .tab')].some((tab) => {
+						const r = tab.getBoundingClientRect();
+						return !!document
+							.elementFromPoint(flow.left + 1, r.top + r.height / 2)
+							?.closest('.tabs');
+					});
+				});
+				expect(taken, 'the tabs do not take presses on the words').toBe(false);
+			}
+			if (width >= 1024) {
+				// pulled out by the pointer, still clear of the code
+				await page.locator('.tabs .toc').hover();
+				await page.waitForTimeout(400);
+				const pulled = await page.evaluate(() => {
+					const tab = /** @type {HTMLElement} */ (
+						document.querySelector('.tabs .toc')
+					).getBoundingClientRect();
+					const items = [...document.querySelectorAll('.stage .item')]
+						.map((e) => e.getBoundingClientRect())
+						.filter((r) => r.width > 0);
+					return { right: tab.right, stage: Math.min(...items.map((r) => r.left)) };
+				});
+				expect(
+					pulled.stage - pulled.right,
+					'hovered, a gap before the code'
+				).toBeGreaterThanOrEqual(8);
+			}
+			expect(await page.locator('.tabs a.home').getAttribute('href')).toBe('/');
+			await page.locator('.tabs .toc').click();
+			await expect(page.locator('dialog[open] a[href="/"]')).toBeVisible();
+			await context.close();
+		});
+	}
 }

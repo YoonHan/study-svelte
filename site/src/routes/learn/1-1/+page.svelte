@@ -23,7 +23,8 @@
 	import ParseCount from '#lib/inside/template/ParseCount.svelte';
 	import FirstChild from '#lib/inside/template/FirstChild.svelte';
 	import { trace_template } from '#lib/inside/template/trace.js';
-	import Contents from '#lib/inside/Contents.svelte';
+	import BookTabs from '#lib/inside/BookTabs.svelte';
+	import mark from '#lib/assets/favicon.svg';
 	import { ChapterState, set_chapter } from '#lib/inside/state.svelte.js';
 	import { chapter_of, next_chapter } from '#lib/path.js';
 
@@ -194,14 +195,12 @@
 </svelte:head>
 
 <div class="page">
+	<BookTabs current="1-1" />
 	<div class="layout">
 		<Stage />
 
 		<div class="flow">
 			<div class="top" class:quiet={chapter.focus > 0}>
-				<nav class="crumbs">
-					<Contents current="1-1" />
-				</nav>
 				<header class="intro">
 					<p class="eyebrow">1-1장</p>
 					<h1><span class="marker">Svelte에서 DOM 노드를</span> 만드는 방법</h1>
@@ -964,18 +963,12 @@
 					{/if}
 					<p class="more">
 						<a class="home pen-button" href="/"
-							><svg class="toc-icon" viewBox="0 0 24 24" aria-hidden="true"
-								><path
-									d="M6.5 3.2c3.9-.3 7.8-.2 11.6.1.4 5.8.5 11.6.2 17.4-3.9.3-7.8.3-11.7.1-.4-5.9-.4-11.8-.1-17.6z"
-								/><path d="M9.2 8.1h6.3M9.3 12h6.1M9.2 15.9h4.4" /><path
-									d="M7.3 8.1h.1M7.3 12h.1M7.3 15.9h.1"
-								/></svg
-							>목차로 돌아가기</a
+							><img class="home-icon" src={mark} alt="" width="22" height="22" />홈으로 돌아가기</a
 						>
 						<button
 							class="reset pen-button"
 							title="이 장을 처음부터 다시 읽습니다. 지금까지의 예측과 진행 상황이 지워집니다"
-							onclick={() => chapter.reset()}>처음으로 돌아가기</button
+							onclick={() => chapter.reset()}>이 장 처음부터 다시 읽기</button
 						>
 					</p>
 				</nav>
@@ -985,10 +978,18 @@
 </div>
 
 <style>
+	/* the left margin is wider: the index tabs (BookTabs) sit in it, clear of the code */
 	.page {
 		max-width: 1440px;
 		margin: 0 auto;
-		padding: 0 24px;
+		padding: 0 24px 0 44px;
+	}
+
+	@media (max-width: 1023px) {
+		.page {
+			/* the right margin gives back what the tabs take, so lines wrap as before */
+			padding: 0 16px 0 34px;
+		}
 	}
 
 	/* code on the left, the words on the right */
@@ -1020,11 +1021,6 @@
 	.top.quiet:hover,
 	.top.quiet:focus-within {
 		opacity: 1;
-	}
-
-	.crumbs {
-		font-size: 13px;
-		color: var(--fg-3);
 	}
 
 	.intro {
@@ -1117,7 +1113,7 @@
 		font-size: 14px;
 	}
 
-	/* back to the contents: a hand-drawn button with a page of the contents drawn in pen */
+	/* back home: a hand-drawn button with the site's mark */
 	.home {
 		display: inline-flex;
 		align-items: center;
@@ -1127,14 +1123,10 @@
 		text-decoration: none;
 	}
 
-	.toc-icon {
-		width: 20px;
-		height: 20px;
-		fill: none;
-		stroke: currentColor;
-		stroke-width: 1.5;
-		stroke-linecap: round;
-		stroke-linejoin: round;
+	.home-icon {
+		display: block;
+		width: 22px;
+		height: 22px;
 	}
 
 	/* a hand-drawn button like the "다음" buttons (`.pen-button`, app.css) */
