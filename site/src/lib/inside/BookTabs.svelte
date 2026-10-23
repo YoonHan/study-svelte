@@ -50,7 +50,8 @@
 		border-radius: 0 9px 9px 0;
 		background: var(--surface);
 		box-shadow: 2px 1px 5px rgb(0 0 0 / 0.08);
-		color: var(--accent);
+		/* ink, the printed book's: the pen colour is for notes on the code beside them */
+		color: var(--fg);
 		text-decoration: none;
 		transform: translateX(-5px);
 		transition:
