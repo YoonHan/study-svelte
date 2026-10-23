@@ -468,7 +468,7 @@
 					<p>
 						<code>vanilla-counter.js</code>와 <code>Counter.js</code>는 같은 카운터인데, 일곱 가지
 						일을 하는 방식이 다릅니다(⑦은 <code>Counter.js</code>에만 있습니다). 차이마다 "Svelte는
-						왜 이렇게 했을까?"라는 질문이 남습니다. 1단계의 나머지 장은 이 질문에 하나씩 답합니다.
+						왜 이렇게 했을까?"라는 질문이 남습니다. 1단계의 나머지 장에서 이 질문들에 답합니다.
 					</p>
 					<JobMap vanilla={data.vanilla} compiled={data.compiled} />
 				</Beat>

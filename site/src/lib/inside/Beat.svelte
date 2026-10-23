@@ -353,7 +353,7 @@
 	 */
 	.beat.past {
 		opacity: 0.1;
-		cursor: pointer;
+		cursor: var(--cursor-point);
 	}
 
 	@media (hover: hover) and (pointer: fine) {

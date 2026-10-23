@@ -7,7 +7,8 @@
 	/**
 	 * The map that ends chapter 1-0: each of the seven differences between the hand-written
 	 * counter and the compiled output, as a card with the lines of each that do the job, the
-	 * "why" question the difference raises and the chapter that answers it. Cards stack in one
+	 * "why" question the difference raises and the chapter that answers it (named, not linked:
+	 * the only way on to another chapter is the link at the end of this one). Cards stack in one
 	 * column, so they read the same on a phone.
 	 *
 	 * @type {{
@@ -37,10 +38,9 @@
 				<div class="excerpt"><Code code={compiled} title="" only={job.compiled} wrap /></div>
 			</div>
 			<p class="why"><span class="why-label">왜?</span> {@html inline_code(job.why)}</p>
-			{#if chapter?.ready}
-				<a class="go pen-go" href="/learn/{job.chapter}">{job.chapter}장 {chapter.title}</a>
-			{:else if chapter}
-				<p class="go soon">{job.chapter}장 {chapter.title} (준비 중)</p>
+			<!-- which chapter answers it, as words only: the one way on is the link at the chapter's end -->
+			{#if chapter}
+				<p class="answers">{job.chapter}장 "{chapter.title}"에서 이 질문에 답합니다.</p>
 			{/if}
 		</li>
 	{/each}
@@ -127,14 +127,10 @@
 		color: var(--accent);
 	}
 
-	.go {
-		justify-self: start;
-		font-size: 15.5px;
-	}
-
-	.go.soon {
-		font-family: var(--font-head);
-		font-weight: 700;
-		color: var(--fg-3);
+	/* a sentence in the reading voice, quieter than the question above it */
+	.answers {
+		font-size: 14.5px;
+		line-height: 1.6;
+		color: var(--fg-2);
 	}
 </style>

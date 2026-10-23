@@ -151,7 +151,7 @@
 
 <style>
 	.popover {
-		cursor: help;
+		cursor: var(--cursor);
 		outline: none;
 	}
 

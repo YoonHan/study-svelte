@@ -79,7 +79,7 @@
 		line-height: 1.1;
 		color: #5b6068;
 		transform: translateY(0) rotate(var(--tilt));
-		cursor: pointer;
+		cursor: var(--cursor-point);
 		transition:
 			transform 220ms var(--ease-out),
 			background-color 220ms ease,

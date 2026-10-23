@@ -135,7 +135,7 @@
 		font-family: var(--font-hand);
 		font-size: 20px;
 		color: var(--fg-2);
-		cursor: pointer;
+		cursor: var(--cursor-point);
 	}
 
 	@media (prefers-reduced-motion: reduce) {

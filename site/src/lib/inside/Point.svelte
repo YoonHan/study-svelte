@@ -33,6 +33,6 @@
 <style>
 	/* underlined by hand (`.pen-underline`, app.css) */
 	.point {
-		cursor: default;
+		cursor: var(--cursor);
 	}
 </style>

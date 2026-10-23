@@ -28,6 +28,8 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	<!-- on a phone's home screen: the same mark on orange (made by scripts/icons.mjs) -->
+	<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 	{#each FIRST as name (name)}
 		<link rel="preload" href={FONTS[name]} as="font" type="font/woff2" crossorigin="anonymous" />
 	{/each}

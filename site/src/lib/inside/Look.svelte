@@ -87,7 +87,7 @@
 <style>
 	/* underlined by hand (`.pen-underline`, app.css) */
 	.look {
-		cursor: default;
+		cursor: var(--cursor);
 	}
 
 	/*

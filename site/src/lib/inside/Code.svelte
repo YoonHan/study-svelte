@@ -868,7 +868,7 @@
 		text-decoration: underline dotted;
 		text-decoration-color: color-mix(in oklab, var(--accent) 55%, transparent);
 		text-underline-offset: 3px;
-		cursor: help;
+		cursor: var(--cursor);
 		outline: none;
 	}
 

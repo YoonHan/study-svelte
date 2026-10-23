@@ -19,6 +19,9 @@
 	--red-soft: color-mix(in oklab, var(--red) 9%, transparent);
 	--focus: #d83a00;
 	--focus-soft: color-mix(in oklab, var(--focus) 10%, transparent);
+	/* selected text: the pen colour, deepened so white words on it reach 7:1 */
+	--selection: #a32b00;
+	--selection-ink: #ffffff;
 	--ok: #2e7d4f; /* green pen */
 	--hi: rgb(255 232 70 / 0.72); /* highlighter, under part of a word (titles) */
 	--hi-wash: rgb(255 228 60 / 0.5); /* faint highlighter behind a code line's text */
@@ -55,6 +58,8 @@
 		--fg-3: #7d7b75;
 		--line: #34363a;
 		--accent: #ff6b3d;
+		--selection: #ff7a50; /* lightened, so near-black words on it reach 7:1 */
+		--selection-ink: #120a06;
 		--red: #ff8a80;
 		--focus: #ff6b3d;
 		--ok: #7fd3a0;
@@ -75,6 +80,49 @@
 
 html {
 	-webkit-text-size-adjust: 100%;
+}
+
+/*
+ * The pointer is an orange pencil, its tip where it points; over anything that can be pressed,
+ * three short orange strokes spring from the tip. Mouse and trackpad only: a touch screen has
+ * no pointer, so it keeps the system's. Everything that sets a cursor uses these two tokens
+ * (never `pointer` or `default`), so the pencil holds everywhere; tests/render.spec.js checks
+ * every control.
+ */
+:root {
+	--cursor: auto;
+	--cursor-point: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	:root {
+		--cursor: url('./lib/assets/cursor.svg') 6 6, auto;
+		--cursor-point: url('./lib/assets/cursor-point.svg') 6 6, pointer;
+	}
+}
+
+html {
+	cursor: var(--cursor);
+}
+
+/* text the reader selects is marked in the pen colour, its words sharp against it (7:1 or more) */
+::selection {
+	background: var(--selection);
+	color: var(--selection-ink);
+}
+
+a[href],
+button:not(:disabled),
+summary,
+select,
+[role='button'],
+[role='radio'],
+[role='tab'] {
+	cursor: var(--cursor-point);
+}
+
+button:disabled {
+	cursor: var(--cursor);
 }
 
 /*
@@ -341,7 +389,7 @@ code {
 	background: var(--bg);
 	color: var(--fg);
 	font-family: var(--font-hand);
-	cursor: pointer;
+	cursor: var(--cursor-point);
 	transition: transform 160ms var(--ease-out);
 }
 
@@ -366,7 +414,7 @@ code {
 
 .pen-button:disabled {
 	opacity: 0.35;
-	cursor: default;
+	cursor: var(--cursor);
 }
 
 .pen-button:focus-visible::before {
@@ -403,7 +451,7 @@ code {
 	background: none;
 	font-family: var(--font-hand);
 	color: var(--accent);
-	cursor: pointer;
+	cursor: var(--cursor-point);
 	transition: color 160ms ease;
 }
 

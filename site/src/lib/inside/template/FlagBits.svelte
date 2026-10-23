@@ -144,7 +144,7 @@
 		font-size: 22px;
 		font-weight: 700;
 		color: var(--fg-3);
-		cursor: pointer;
+		cursor: var(--cursor-point);
 		transition:
 			border-color 160ms ease,
 			background-color 160ms ease,

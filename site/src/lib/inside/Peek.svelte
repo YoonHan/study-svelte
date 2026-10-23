@@ -78,7 +78,7 @@
 
 <style>
 	.peek {
-		cursor: default;
+		cursor: var(--cursor);
 		outline: none;
 	}
 </style>

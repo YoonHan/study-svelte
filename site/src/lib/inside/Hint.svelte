@@ -76,7 +76,7 @@
 		font-family: var(--font-hand);
 		font-size: 20px;
 		color: var(--fg);
-		cursor: pointer;
+		cursor: var(--cursor-point);
 		transition:
 			border-color 160ms ease,
 			transform 160ms var(--ease-out);

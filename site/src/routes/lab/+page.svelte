@@ -256,7 +256,7 @@
 		border-radius: 7px;
 		font-size: 13px;
 		color: var(--fg-2);
-		cursor: pointer;
+		cursor: var(--cursor-point);
 	}
 
 	.levels button.on {
@@ -347,7 +347,7 @@
 		border-radius: 7px;
 		background: var(--surface);
 		font-size: 13px;
-		cursor: pointer;
+		cursor: var(--cursor-point);
 		transition: transform 160ms var(--ease-out);
 	}
 
@@ -357,7 +357,7 @@
 
 	.controls button:disabled {
 		opacity: 0.4;
-		cursor: default;
+		cursor: var(--cursor);
 	}
 
 	.controls .act {
@@ -399,7 +399,7 @@
 		border-radius: 4px;
 		background: none;
 		text-align: left;
-		cursor: pointer;
+		cursor: var(--cursor-point);
 		font: inherit;
 	}
 
@@ -456,7 +456,7 @@
 		font-family: var(--font-sans);
 		font-size: 12px;
 		color: var(--focus);
-		cursor: pointer;
+		cursor: var(--cursor-point);
 	}
 
 	.inside {

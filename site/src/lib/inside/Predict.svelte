@@ -71,7 +71,7 @@
 		padding: 7px 14px;
 		border: 1.25px solid transparent;
 		border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
-		cursor: pointer;
+		cursor: var(--cursor-point);
 		transition:
 			border-color 160ms ease,
 			background-color 160ms ease;
@@ -107,7 +107,7 @@
 	}
 
 	:disabled .option {
-		cursor: default;
+		cursor: var(--cursor);
 	}
 
 	input {

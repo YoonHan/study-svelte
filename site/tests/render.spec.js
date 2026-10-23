@@ -1176,3 +1176,116 @@ for (const where of [{ url: '/' }, ...CHAPTERS]) {
 		}
 	});
 }
+
+/*
+ * The pointer is the site's pencil everywhere a mouse is used: the plain pencil over the page,
+ * the pencil with its three strokes over everything that can be pressed. A control that set
+ * `cursor: pointer` of its own would show the system's hand instead.
+ */
+for (const where of [{ url: '/' }, ...CHAPTERS]) {
+	test(`${where.url}: the pointer is the pencil, with its strokes over everything pressable`, async ({
+		page
+	}) => {
+		if ('key' in where) await open(page, 999, where);
+		else {
+			await page.goto(where.url);
+			await page.waitForTimeout(1500);
+		}
+		const found = await page.evaluate(() => {
+			const probe = (/** @type {string} */ value) => {
+				const el = document.createElement('span');
+				el.style.cursor = value;
+				document.body.append(el);
+				const cursor = getComputedStyle(el).cursor;
+				el.remove();
+				return cursor;
+			};
+			const pencil = probe('var(--cursor)');
+			const point = probe('var(--cursor-point)');
+			const visible = (/** @type {Element} */ el) => {
+				const r = el.getBoundingClientRect();
+				return r.width > 1 && r.height > 1 && getComputedStyle(el).visibility !== 'hidden';
+			};
+			const controls = [
+				...document.querySelectorAll('a[href], button:not(:disabled), [role="radio"]')
+			].filter(visible);
+			return {
+				pencil,
+				point,
+				page: getComputedStyle(document.body).cursor,
+				words: getComputedStyle(document.querySelector('p') ?? document.body).cursor,
+				count: controls.length,
+				off: controls
+					.filter((el) => getComputedStyle(el).cursor !== point)
+					.map(
+						(el) =>
+							`${el.tagName.toLowerCase()}.${[...el.classList].join('.')} "${el.textContent?.trim().slice(0, 20)}"`
+					)
+			};
+		});
+		expect(found.pencil, 'the pencil is an image').toMatch(/^url\(/);
+		expect(found.point, 'the pressing pencil is a different image').toMatch(/^url\(/);
+		expect(found.point).not.toBe(found.pencil);
+		expect(found.page, 'the page shows the pencil').toBe(found.pencil);
+		expect(found.words, 'so do its words').toBe(found.pencil);
+		expect(found.count).toBeGreaterThan(0);
+		expect(found.off, 'controls without the pressing pencil').toEqual([]);
+	});
+}
+
+test('on a phone the pointer is left to the system', async ({ browser }) => {
+	const phone = await browser.newContext({
+		viewport: { width: 390, height: 844 },
+		isMobile: true,
+		hasTouch: true
+	});
+	const page = await phone.newPage();
+	await page.goto('/learn/1-0');
+	await page.waitForSelector('.beat');
+	expect(await page.evaluate(() => getComputedStyle(document.body).cursor)).toBe('auto');
+	await phone.close();
+});
+
+/*
+ * A chapter has one way on to another chapter: the link at its end. Nothing in the middle
+ * (the summary cards once linked each difference to its chapter) lets the reader leave early.
+ * The contents drawer, opened on purpose, is not counted.
+ */
+for (const ch of CHAPTERS) {
+	test(`${ch.url}: the only link to another chapter is the one at the end`, async ({ page }) => {
+		await open(page, 999, ch);
+		const links = await page.evaluate(() =>
+			[...document.querySelectorAll('a[href^="/learn/"]')]
+				.filter((a) => !a.closest('dialog'))
+				.map((a) => ({ text: a.textContent?.trim().slice(0, 30), end: !!a.closest('nav.after') }))
+		);
+		expect(links.length, 'at most one link to another chapter').toBeLessThanOrEqual(1);
+		for (const link of links)
+			expect(link.end, `"${link.text}" is in the chapter's ending`).toBe(true);
+	});
+}
+
+/* Selected text is marked in the pen colour with its words sharp against it: 7:1 or more, in both themes. */
+for (const colorScheme of /** @type {const} */ (['light', 'dark'])) {
+	test(`selected text reads at 7:1 or more (${colorScheme})`, async ({ browser }) => {
+		const context = await browser.newContext({ colorScheme });
+		const page = await context.newPage();
+		await open(page, 999, CHAPTERS[1]);
+		const ratio = await page.evaluate(() => {
+			const style = getComputedStyle(document.querySelector('p') ?? document.body, '::selection');
+			const rgb = (/** @type {string} */ c) => (c.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+			const lum = (/** @type {number[]} */ c) => {
+				const [r, g, b] = c.map((v) => {
+					const x = v / 255;
+					return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+				});
+				return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+			};
+			const a = lum(rgb(style.backgroundColor));
+			const b = lum(rgb(style.color));
+			return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+		});
+		expect(ratio).toBeGreaterThanOrEqual(7);
+		await context.close();
+	});
+}
