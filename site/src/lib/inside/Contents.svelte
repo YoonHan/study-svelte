@@ -3,14 +3,13 @@
 	import mark from '#lib/assets/favicon.svg';
 
 	/**
-	 * The chapter's way around: a "목차" link that opens the contents in a drawer over the page,
-	 * with a way home at its top. A native <dialog> gives focus handling and Esc for free.
+	 * The contents in a drawer over the chapter, with a way home at its top. Opened by the
+	 * "목차" index tab (BookTabs) through `show()`. A native <dialog> gives focus handling and
+	 * Esc for free.
 	 *
-	 * `button`: false when something else opens the drawer (through `show()`).
-	 *
-	 * @type {{ current: string, button?: boolean }}
+	 * @type {{ current: string }}
 	 */
-	let { current, button = true } = $props();
+	let { current } = $props();
 
 	/** @type {HTMLDialogElement | undefined} */
 	let dialog = $state();
@@ -27,8 +26,6 @@
 		dialog?.close();
 	}
 </script>
-
-{#if button}<button class="link pen-link" onclick={show}>목차</button>{/if}
 
 <dialog
 	bind:this={dialog}
@@ -57,12 +54,6 @@
 </dialog>
 
 <style>
-	/* a link written in pen (`.pen-link`, app.css) */
-	.link {
-		font-size: 21px;
-		line-height: 1.2;
-	}
-
 	/*
 	 * The drawer slides in from the left edge, where the code lives (spatial consistency).
 	 * 340ms with the iOS-like drawer curve; it exits the way it came in.

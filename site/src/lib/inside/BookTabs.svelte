@@ -26,7 +26,7 @@
 	>
 	<button class="tab toc" onclick={() => contents?.show()}>목차</button>
 </nav>
-<Contents {current} button={false} bind:this={contents} />
+<Contents {current} bind:this={contents} />
 
 <style>
 	.tabs {
