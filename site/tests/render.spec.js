@@ -1363,6 +1363,17 @@ for (const ch of CHAPTERS) {
 					pulled.stage - pulled.right,
 					'hovered, a gap before the code'
 				).toBeGreaterThanOrEqual(8);
+				// and its words turn from ink to the pen colour
+				const colours = await page.evaluate(() => {
+					const probe = document.createElement('span');
+					probe.style.color = 'var(--accent)';
+					document.body.append(probe);
+					const accent = getComputedStyle(probe).color;
+					probe.remove();
+					const tab = /** @type {HTMLElement} */ (document.querySelector('.tabs .toc'));
+					return { accent, tab: getComputedStyle(tab).color };
+				});
+				expect(colours.tab, 'hovered, the pen colour').toBe(colours.accent);
 			}
 			expect(await page.locator('.tabs a.home').getAttribute('href')).toBe('/');
 			await page.locator('.tabs .toc').click();
