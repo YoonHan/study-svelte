@@ -1363,17 +1363,28 @@ for (const ch of CHAPTERS) {
 					pulled.stage - pulled.right,
 					'hovered, a gap before the code'
 				).toBeGreaterThanOrEqual(8);
-				// and its words turn from ink to the pen colour
+				// and its edge is drawn in the pen colour, the words staying ink
 				const colours = await page.evaluate(() => {
-					const probe = document.createElement('span');
-					probe.style.color = 'var(--accent)';
-					document.body.append(probe);
-					const accent = getComputedStyle(probe).color;
-					probe.remove();
-					const tab = /** @type {HTMLElement} */ (document.querySelector('.tabs .toc'));
-					return { accent, tab: getComputedStyle(tab).color };
+					const probe = (/** @type {string} */ value) => {
+						const el = document.createElement('span');
+						el.style.color = value;
+						document.body.append(el);
+						const colour = getComputedStyle(el).color;
+						el.remove();
+						return colour;
+					};
+					const tab = getComputedStyle(
+						/** @type {HTMLElement} */ (document.querySelector('.tabs .toc'))
+					);
+					return {
+						accent: probe('var(--accent)'),
+						ink: probe('var(--fg)'),
+						edge: tab.borderTopColor,
+						words: tab.color
+					};
 				});
-				expect(colours.tab, 'hovered, the pen colour').toBe(colours.accent);
+				expect(colours.edge, 'hovered, an edge in the pen colour').toBe(colours.accent);
+				expect(colours.words, 'hovered, the words still ink').toBe(colours.ink);
 			}
 			expect(await page.locator('.tabs a.home').getAttribute('href')).toBe('/');
 			await page.locator('.tabs .toc').click();
@@ -1381,4 +1392,25 @@ for (const ch of CHAPTERS) {
 			await context.close();
 		});
 	}
+}
+
+/*
+ * A chapter's heading (its number and title) stays in full ink while the reader goes on:
+ * only the beats already read step back.
+ */
+for (const ch of CHAPTERS) {
+	test(`${ch.url}: the chapter's title is never faded`, async ({ page }) => {
+		await open(page, 999, ch);
+		await page.locator('.beat').nth(5).dispatchEvent('pointerdown');
+		await page.evaluate(() => scrollTo(0, document.body.scrollHeight / 2));
+		await page.waitForTimeout(600);
+		const opacity = await page.evaluate(() => {
+			let value = 1;
+			for (let el = document.querySelector('h1'); el; el = el.parentElement) {
+				value *= Number(getComputedStyle(el).opacity);
+			}
+			return value;
+		});
+		expect(opacity).toBe(1);
+	});
 }

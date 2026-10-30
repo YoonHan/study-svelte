@@ -57,7 +57,7 @@
 		transition:
 			transform 200ms var(--ease-out),
 			background-color 160ms ease,
-			color 160ms ease;
+			border-color 160ms ease;
 	}
 
 	.toc,
@@ -73,17 +73,17 @@
 	}
 
 	@media (hover: hover) and (pointer: fine) {
-		/* pointed at: pulled out, and its words turn the pen colour, as a link's do */
+		/* pointed at: pulled out, and its edge drawn in the pen colour; the words stay ink */
 		.tab:hover {
 			transform: none;
 			background: var(--bg);
-			color: var(--accent);
+			border-color: var(--accent);
 		}
 	}
 
 	.tab:focus-visible {
 		transform: none;
-		color: var(--accent);
+		border-color: var(--accent);
 	}
 
 	/* narrow screens: slimmer and not tucked, so they fit the page's margin whole */

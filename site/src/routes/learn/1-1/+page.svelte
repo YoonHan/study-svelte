@@ -200,7 +200,7 @@
 		<Stage />
 
 		<div class="flow">
-			<div class="top" class:quiet={chapter.focus > 0}>
+			<div class="top">
 				<header class="intro">
 					<p class="eyebrow">1-1장</p>
 					<h1><span class="marker">Svelte에서 DOM 노드를</span> 만드는 방법</h1>
@@ -1006,21 +1006,6 @@
 		padding: 28px 0 60vh;
 		font-size: 17px;
 		line-height: 1.8;
-	}
-
-	/* once the reader is inside the story, the page's own furniture steps back */
-	.top {
-		transition: opacity 400ms ease;
-	}
-
-	.top.quiet {
-		opacity: 0.15;
-	}
-
-	/* pointing at it brings it back, like a beat already read */
-	.top.quiet:hover,
-	.top.quiet:focus-within {
-		opacity: 1;
 	}
 
 	.intro {
