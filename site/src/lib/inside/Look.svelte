@@ -11,9 +11,14 @@
 	 * `at`: which block (the `name` of a `<Highlight>` in the same beat) and which text in it;
 	 * several texts mark several places (a part that spans lines, or the same idea in two blocks).
 	 *
-	 * @type {{ at: { code: string, text: string | string[] }[], children: import('svelte').Snippet }}
+	 * A text may be `{ text, nth }` to mark its nth occurrence rather than the first (the second
+	 * `createElement('button')`, the third `' '`): mark only what the words are about.
+	 *
+	 * @type {{ at: { code: string, text: Mark | Mark[] }[], children: import('svelte').Snippet }}
 	 */
 	let { at, children } = $props();
+
+	/** @typedef {string | { text: string, nth: number }} Mark */
 
 	/** @type {HTMLElement | undefined} */
 	let words = $state();
@@ -33,7 +38,8 @@
 			if (!(block instanceof HTMLElement)) continue;
 			const base = block.getBoundingClientRect();
 			for (const text of Array.isArray(target.text) ? target.text : [target.text]) {
-				for (const box of text_boxes(block, text)) {
+				const [find, nth] = typeof text === 'string' ? [text, 1] : [text.text, text.nth];
+				for (const box of text_boxes(block, find, nth)) {
 					// in the block's own coordinates, so the circle scrolls with the code
 					const dx = block.scrollLeft - base.left;
 					const dy = block.scrollTop - base.top;

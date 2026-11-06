@@ -21,11 +21,13 @@ export function per_line(rects) {
 }
 
 /**
- * Where the first occurrence of `text` is drawn inside `root`, per visual line.
+ * Where an occurrence of `text` (the first, or the `nth`) is drawn inside `root`, per visual
+ * line.
  * @param {Element} root
  * @param {string} text
+ * @param {number} [nth] which occurrence, counting from 1
  */
-export function text_boxes(root, text) {
+export function text_boxes(root, text, nth = 1) {
 	const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 	/** @type {[Text, number][]} */
 	const nodes = [];
@@ -35,7 +37,11 @@ export function text_boxes(root, text) {
 		nodes.push([node, all.length]);
 		all += node.data;
 	}
-	const at = all.indexOf(text);
+	let at = -1;
+	for (let n = 0; n < nth; n++) {
+		at = all.indexOf(text, at + 1);
+		if (at === -1) break;
+	}
 	if (at === -1 || text === '') return [];
 	/** @param {number} pos @param {boolean} end */
 	const find = (pos, end) => {

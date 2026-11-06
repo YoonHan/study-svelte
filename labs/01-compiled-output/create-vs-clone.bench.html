@@ -19,12 +19,14 @@
 		p.append(' ');
 		var button_1 = document.createElement('button');
 		button_1.append('초기화');
-		fragment.append(button, ' ', p, ' ', button_1);
+		// the added paragraphs go in with the rest, in the one append
+		var helps = [];
 		for (let i = 0; i < extra; i++) {
 			var help = document.createElement('p');
 			help.append(`도움말 ${i + 1}`);
-			fragment.append(' ', help);
+			helps.push(' ', help);
 		}
+		fragment.append(button, ' ', p, ' ', button_1, ...helps);
 		return fragment;
 	}
 

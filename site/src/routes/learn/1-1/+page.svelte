@@ -14,6 +14,7 @@
 	import Recall from '#lib/inside/Recall.svelte';
 	import Brace from '#lib/inside/Brace.svelte';
 	import Look from '#lib/inside/Look.svelte';
+	import Peek from '#lib/inside/Peek.svelte';
 	import Highlight from '#lib/inside/Highlight.svelte';
 	import Lab from '#lib/inside/Lab.svelte';
 	import FlagCompiler from '#lib/inside/template/FlagCompiler.svelte';
@@ -22,6 +23,8 @@
 	import CloneVsImport from '#lib/inside/template/CloneVsImport.svelte';
 	import ParseCount from '#lib/inside/template/ParseCount.svelte';
 	import FirstChild from '#lib/inside/template/FirstChild.svelte';
+	import CreateVsClone from '#lib/inside/template/CreateVsClone.svelte';
+	import CloneTiming from '#lib/inside/template/CloneTiming.svelte';
 	import { trace_template } from '#lib/inside/template/trace.js';
 	import BookTabs from '#lib/inside/BookTabs.svelte';
 	import mark from '#lib/assets/favicon.svg';
@@ -63,24 +66,82 @@
 		'<my-widget label={{ items: [1, 2, 3] }}></my-widget>'
 	].join('\n');
 
-	/** two ways to make the counter's nodes (the question that closes the chapter) */
+	/** two ways to make the counter's nodes (question 6) */
 	const BY_TEMPLATE = [
-		'// 템플릿을 복제하는 방식 (이 장에서 본 컴파일 결과)',
-		'var root = $.template(`<button> </button> <p> </p> <button>초기화</button>`, 1);',
+		'// 템플릿을 복제하는 방식',
+		'var root = $.template(',
+		'\t`<button> </button> <p> </p>` +',
+		'\t` <button>초기화</button>`,',
+		'\t1',
+		');',
 		'var fragment = root();'
 	].join('\n');
 
 	const BY_CREATE = [
-		'// createElement로 노드를 하나씩 만드는 방식',
-		'var fragment = document.createDocumentFragment();',
-		"var button = document.createElement('button');",
+		'// createElement로 하나씩 만드는 방식',
+		'var fragment =',
+		'\tdocument.createDocumentFragment();',
+		'var button =',
+		"\tdocument.createElement('button');",
 		"button.append(' ');",
 		"var p = document.createElement('p');",
 		"p.append(' ');",
-		"var button_1 = document.createElement('button');",
+		'var button_1 =',
+		"\tdocument.createElement('button');",
 		"button_1.append('초기화');",
-		"fragment.append(button, ' ', p, ' ', button_1);"
+		'fragment.append(',
+		"\tbutton, ' ', p, ' ', button_1",
+		');'
 	].join('\n');
+
+	/** question 6: the template line, split for reading (the compiled output has one string) */
+	const TEMPLATE_LINE = [
+		'var root = $.template(',
+		'\t`<button> </button> <p> </p>` +',
+		'\t` <button>초기화</button>`,',
+		'\t1',
+		');'
+	].join('\n');
+
+	/** question 6: five unchanging paragraphs added at the counter's end */
+	const STATIC_SOURCE = [
+		'<p>도움말 1</p>',
+		'<p>도움말 2</p>',
+		'<p>도움말 3</p>',
+		'<p>도움말 4</p>',
+		'<p>도움말 5</p>'
+	].join('\n');
+
+	const STATIC_CREATE = [
+		'// createElement 방식: 문단마다 두 줄',
+		"var p_1 = document.createElement('p');",
+		"p_1.append('도움말 1');",
+		'// … p_5까지 같은 두 줄',
+		'fragment.append(',
+		"\tbutton, ' ', p, ' ', button_1,",
+		"\t' ', p_1, ' ', p_2, ' ', p_3,",
+		"\t' ', p_4, ' ', p_5",
+		');'
+	].join('\n');
+
+	const STATIC_TEMPLATE = [
+		'// 템플릿을 복제하는 방식',
+		'var root = $.template(',
+		'\t`<button> </button> <p> </p>` +',
+		'\t` <button>초기화</button>` +',
+		'\t` <p>도움말 1</p>` +',
+		'\t` <p>도움말 2</p>` +',
+		'\t` <p>도움말 3</p>` +',
+		'\t` <p>도움말 4</p>` +',
+		'\t` <p>도움말 5</p>`,',
+		'\t1',
+		');',
+		'// …',
+		'$.next(10);'
+	].join('\n');
+
+	/** question 6: the createElement way keeps each node in a variable as it makes it */
+	const CREATE_KEEP = ["var p = document.createElement('p');", "p.append(' ');"].join('\n');
 
 	/** a component with an `{#if}` block, and part of its svelte@5.0.0 output (question 5) */
 	const IF_SOURCE = [
@@ -848,8 +909,8 @@
 								{
 									code: 'if-compiled',
 									text: [
-										'var root_1 = $.template(`<p>안녕하세요</p>`);',
-										'var root = $.template(`<button>열기</button> <!>`, 1);'
+										'$.template(`<p>안녕하세요</p>`)',
+										'$.template(`<button>열기</button> <!>`, 1)'
 									]
 								}
 							]}>템플릿</Look
@@ -858,8 +919,8 @@
 								{ code: 'if-source', text: '{#if show}' },
 								{ code: 'if-compiled', text: '() => $.get(show)' }
 							]}>조건</Look
-						>이 한 번도 참이 되지 않으면 <Look
-							at={[{ code: 'if-compiled', text: 'var p = root_1();' }]}><code>root_1()</code></Look
+						>이 한 번도 참이 되지 않으면 <Look at={[{ code: 'if-compiled', text: 'root_1()' }]}
+							><code>root_1()</code></Look
 						>은 호출되지 않으므로, <Look
 							at={[
 								{ code: 'if-source', text: '<p>안녕하세요</p>' },
@@ -869,6 +930,282 @@
 								}
 							]}>그 분기</Look
 						>는 파싱 비용도 들지 않습니다.
+					</p>
+				</Beat>
+			</Step>
+
+			<Step>
+				<Beat code={['compiled', 'template']} on="compiled" lines={[6, 10]} cue="질문 6">
+					<Ask>
+						<p>
+							이 장에서 살펴본 컴파일 결과는 템플릿을 복제해서 노드를 만듭니다. 같은 노드를
+							<code>document.createElement</code>로 하나씩 만들 수도 있겠죠.
+							<!-- 학습자 문장: 학습자가 직접 불러 준 문장입니다. 바꾸지 않습니다. -->
+							카운터의 노드를 만드는 두 방식을 비교하면 아래와 같습니다. <Look
+								at={[
+									{
+										code: 'by-template',
+										text: ['$.template(', 'root()']
+									}
+								]}>템플릿을 복제하는 방식</Look
+							>과 <Look
+								at={[
+									{
+										code: 'by-create',
+										text: [
+											'createDocumentFragment()',
+											"createElement('button')",
+											"createElement('p')",
+											{ text: "createElement('button')", nth: 2 }
+										]
+									}
+								]}><code>createElement</code>로 노드를 하나씩 만드는 방식</Look
+							>은 마운트 한 번에 노드를 각각 몇 개 만들까요?
+						</p>
+						<Highlight code={BY_TEMPLATE} name="by-template" />
+						<Highlight code={BY_CREATE} name="by-create" />
+						<p class="aside">
+							읽기 좋게 템플릿 문자열을 <code>+</code>로 나눠 적었습니다. 실제 컴파일 결과에서는
+							문자열 하나입니다.
+						</p>
+					</Ask>
+					<Predict
+						options={[
+							'템플릿을 복제하는 방식이 더 적게 만든다',
+							'두 방식이 같은 수를 만든다',
+							'createElement 방식이 더 적게 만든다'
+						]}
+						answer={1}
+					/>
+					<Hint n={1}>
+						<p>
+							<code>append</code>에 문자열을 넘기면, 브라우저는 그 문자열로 텍스트 노드를 만들어
+							넣습니다.
+						</p>
+					</Hint>
+					<Hint
+						n={2}
+						at={52}
+						note="fragment를 통째로 복제"
+						point="node.cloneNode(true)"
+						on="template"
+						lines={[52]}
+					>
+						<p>
+							템플릿 문자열에서 태그와 태그 사이에 있는 공백 한 칸도 텍스트 노드가 됩니다. 그리고
+							<code>cloneNode(true)</code>는 맨 바깥의 <code>DocumentFragment</code>까지 함께
+							복제합니다.
+						</p>
+					</Hint>
+				</Beat>
+				<Beat lines={[]} cue="실험해 보기">
+					<Lab title="두 방식으로 카운터의 노드 만들기">
+						<CreateVsClone />
+					</Lab>
+				</Beat>
+				<Beat answer lines={[]} id="same-nodes">
+					<p>
+						<strong>같습니다.</strong> 두 방식 모두 마운트 한 번에 노드를 9개 만듭니다.
+					</p>
+				</Beat>
+				<Beat lines={[]}>
+					<p>
+						혹시 노드를 만드는 호출이 <Look
+							at={[
+								{
+									code: 'by-create-count',
+									text: [
+										'createDocumentFragment()',
+										"createElement('button')",
+										"createElement('p')",
+										{ text: "createElement('button')", nth: 2 }
+									]
+								}
+							]}><code>createDocumentFragment</code> 한 번과 <code>createElement</code> 세 번</Look
+						>이니 노드도 네 개라고 생각하셨나요? 브라우저는 <code>append</code>에 넘긴 문자열마다
+						텍스트 노드를 만들어 넣습니다. <Look
+							at={[
+								{
+									code: 'by-create-count',
+									text: [
+										{ text: "' '", nth: 1 },
+										{ text: "' '", nth: 2 },
+										"'초기화'",
+										{ text: "' '", nth: 3 },
+										{ text: "' '", nth: 4 }
+									]
+								}
+							]}>그 문자열</Look
+						>은 모두 다섯 개입니다. 그래서 <code>DocumentFragment</code> 1개, 요소 3개, 텍스트 노드 5개를
+						합쳐 9개가 됩니다.
+					</p>
+					<Highlight code={BY_CREATE} name="by-create-count" />
+				</Beat>
+				<Beat code="template" at={52} note="fragment를 통째로 복제" point="node.cloneNode(true)">
+					<p>
+						템플릿을 복제하는 방식도 <code>cloneNode</code>를 한 번만 부를 뿐, 노드는 똑같이
+						만듭니다. <Look
+							at={[
+								{
+									code: 'template-line',
+									text: [{ text: '> <', nth: 1 }, { text: '> <', nth: 3 }, '초기화']
+								}
+							]}>버튼과 문단 안의 텍스트 노드 세 개</Look
+						>(공백 한 칸 두 개와 <code>초기화</code>)에 더해, <Look
+							at={[{ code: 'template-line', text: [{ text: '> <', nth: 2 }, '` <'] }]}
+							>태그와 태그 사이</Look
+						>에도 공백이 한 칸씩 있습니다. 브라우저는 이 공백도 버리지 않고, 공백 한 칸을 담은
+						텍스트 노드로 만듭니다. 텍스트 노드 다섯 개와 요소 세 개, 그리고 맨 바깥의
+						<code>DocumentFragment</code>까지, <code>cloneNode(true)</code>는 9개의 노드를 한꺼번에
+						복제합니다.
+					</p>
+					<Highlight code={TEMPLATE_LINE} name="template-line" />
+				</Beat>
+				<Beat lines={[]}>
+					<Ask>
+						<p>노드 수가 같다면, 템플릿을 복제하는 방식은 무엇이 다를까요?</p>
+					</Ask>
+				</Beat>
+				<Beat code="template" lines={[46, 47, 51, 52, 53]}>
+					<p>
+						JavaScript가 DOM 함수를 부르는 횟수가 다릅니다. 실험에서 100번 마운트하는 동안,
+						<code>createElement</code> 방식은 노드를 만들거나 붙이는 DOM 함수를 800번 불렀습니다.
+						마운트마다 노드를 만드는 함수 4번과 <code>append</code> 4번, 모두 8번입니다. 템플릿을
+						복제하는 방식은 처음 한 번 HTML을 파싱한 뒤로는 마운트마다 <code>cloneNode</code>를 한
+						번, 모두 100번만 불렀습니다.
+					</p>
+					<p>
+						<code>cloneNode(true)</code>를 부르면, 9개의 노드를 하나씩 찾아 복사하는 일은 브라우저가
+						자기 안에서 한 번에 처리합니다. <code>createElement</code> 방식에서는 어떤 노드를 만들어 어디에
+						붙일지를 JavaScript가 한 단계씩 정하고, 단계마다 DOM 함수를 부릅니다. 만드는 노드의 양은 같고,
+						그 일을 몇 번에 나눠 지시하느냐가 다릅니다.
+					</p>
+					<Say at={46} note="처음 한 번만 파싱" point="node === undefined" />
+					<Say at={52} note="마운트마다 한 번 복제" point="node.cloneNode(true)" />
+				</Beat>
+				<Beat code="counter" lines={[7]}>
+					<Say stage at={7} note="이 뒤에 문단 다섯 개를 더하면" point="초기화</button>" />
+					<Ask>
+						<p>
+							카운터 끝에 내용이 바뀌지 않는 문단 다섯 개를 더하면, <Look
+								at={[
+									{
+										code: 'by-template-2',
+										text: ['$.template(']
+									}
+								]}>템플릿을 복제하는 방식</Look
+							>과 <Look
+								at={[
+									{
+										code: 'by-create-2',
+										text: [
+											'createDocumentFragment()',
+											"createElement('button')",
+											"createElement('p')",
+											{ text: "createElement('button')", nth: 2 }
+										]
+									}
+								]}><code>createElement</code> 방식</Look
+							>의 코드는 각각 어떻게 늘어날까요?
+						</p>
+						<Highlight lang="svelte" code={STATIC_SOURCE} />
+						<Highlight code={BY_TEMPLATE} name="by-template-2" />
+						<Highlight code={BY_CREATE} name="by-create-2" />
+					</Ask>
+				</Beat>
+				<Beat lines={[]}>
+					<p>
+						혹시 <code>createElement</code> 방식은 문단이 다섯 개니 다섯 줄쯤 늘어난다고
+						생각하셨나요? <Look
+							at={[
+								{
+									code: 'static-create',
+									text: ["createElement('p')", "append('도움말 1')"]
+								}
+							]}>문단 하나</Look
+						>에는 요소를 만드는 줄과 그 안에 글자를 넣는 줄이 함께 필요해서, 10줄이 늘어납니다. <Look
+							at={[
+								{
+									code: 'static-create',
+									text: ["' ', p_1, ' ', p_2, ' ', p_3,", "' ', p_4, ' ', p_5"]
+								}
+							]}>마지막 <code>fragment.append</code></Look
+						>에도 새 문단 다섯 개와 그 사이의 공백 다섯 개가 붙습니다. 마운트 한 번에 부르는 DOM
+						함수도 8번에서 18번으로 늘어납니다.
+					</p>
+					<Highlight code={STATIC_CREATE} name="static-create" />
+					<p>
+						템플릿을 복제하는 방식은 <Look
+							at={[
+								{
+									code: 'static-template',
+									text: [
+										'` <p>도움말 1</p>` +',
+										'` <p>도움말 2</p>` +',
+										'` <p>도움말 3</p>` +',
+										'` <p>도움말 4</p>` +',
+										'` <p>도움말 5</p>`,'
+									]
+								}
+							]}>템플릿 문자열</Look
+						>만 길어집니다. 문단 다섯 개가 문자열 안에 그대로 들어가서 <code>cloneNode</code> 한
+						번에 함께 복제되므로, 마운트할 때 부르는 DOM 함수는 여전히 한 번입니다. 실제로 컴파일해
+						보면 JavaScript는 <Look at={[{ code: 'static-template', text: '$.next(10);' }]}
+							><code>$.next(10);</code></Look
+						> 한 줄만 늘어납니다. 이 줄은 하이드레이션 중일 때만 일하고 보통 마운트할 때는 아무것도 하지
+						않는데, 왜 생기는지는 1-7장 "서버 렌더링, 하이드레이션, 개발 모드에서 달라지는 컴파일 결과"에서
+						살펴봅니다.
+					</p>
+					<Highlight code={STATIC_TEMPLATE} name="static-template" />
+				</Beat>
+				<Beat lines={[]}>
+					<Ask>
+						<p>
+							그렇다면 템플릿을 복제하는 방식에는 대가가 없을까요? <Look
+								at={[{ code: 'create-keep', text: "document.createElement('p')" }]}
+								><code>createElement</code> 방식</Look
+							>은 노드를 만들자마자 변수에 담습니다. fragment를 통째로 복제하면, 나중에 숫자를 써
+							넣을 문단 안의 텍스트 노드는 어떻게 손에 넣을까요?
+						</p>
+						<Highlight code={CREATE_KEEP} name="create-keep" />
+					</Ask>
+				</Beat>
+				<Beat code="compiled" lines={[10, 11, 15, 19, 20, 24]}>
+					<p>
+						복제한 뒤에 다룰 노드를 복제본 안에서 다시 찾아가야 합니다. 컴파일 결과는
+						<code>$.first_child</code>로 첫 번째 버튼에, <code>$.child</code>로 그 안의 텍스트
+						노드에,
+						<code>$.sibling</code>으로 두 칸 옆의 문단에 가는 식으로, 다룰 노드를 하나씩 찾아갑니다.
+						<code>createElement</code> 방식에는 없는 일입니다.
+					</p>
+					<Say at={11} note="첫 번째 버튼으로" point="$.first_child" />
+					<Say at={15} note="그 안의 텍스트 노드로" point="$.child" />
+					<Say at={19} note="두 칸 옆의 문단으로" point="$.sibling" />
+				</Beat>
+				<Beat lines={[]}>
+					<Ask>
+						<p>찾아가는 일까지 더하면, 어느 방식이 더 빠를까요?</p>
+					</Ask>
+				</Beat>
+				<Beat lines={[]} cue="실험해 보기">
+					<Lab title="두 방식으로 1만 번씩 마운트해서 시간 재기">
+						<CloneTiming />
+					</Lab>
+				</Beat>
+				<Beat code="compiled" lines={[11, 15, 19, 20, 24]}>
+					<p>
+						혹시 찾아가는 일이 더해졌으니 차이가 사라지거나 뒤집힐 거라고 생각하셨나요? 바뀌지 않는
+						문단을 더할수록 템플릿을 복제하는 방식이 분명히 빠릅니다. 이 글을 쓰면서 Chromium에서
+						1만 번씩 마운트해 잰 값(일곱 번 잰 가운데 값)은, 문단 5개를 더했을 때
+						<code>createElement</code> 방식이 22.2ms, 템플릿을 복제하는 방식이 10.8ms였고, 문단 50개를
+						더했을 때는 148.5ms와 51.4ms였습니다. 카운터만 있을 때는 8.5ms와 6.1ms로 차이가 작아서, 재는
+						때와 브라우저에 따라 뒤바뀌기도 합니다.
+					</p>
+					<p>
+						측정값으로 보면, 찾아가는 일은 노드를 만드는 일보다 가볍습니다. 이미 있는 노드를 읽기만
+						하기 때문이라고 이해할 수 있습니다. 그리고 컴파일 결과는 다룰 노드만 찾아가므로, 바뀌지
+						않는 문단을 끝에 더해도 찾아가는 길은 길어지지 않습니다. 마운트 한 번의 차이는 아주
+						작지만, 마운트가 많고 마크업이 클수록 쌓입니다.
 					</p>
 				</Beat>
 			</Step>
@@ -890,6 +1227,15 @@
 							>TEMPLATE_USE_IMPORT_NODE</code
 						>).
 					</p>
+					<p>
+						템플릿을 복제하는 방식은 노드를 하나씩 만드는 방식과 같은 수의 노드를 만듭니다. 다만 <Peek
+							lines={{ template: [46, 47] }}>처음 한 번 HTML을 파싱한 뒤로는</Peek
+						>
+						<Peek lines={{ template: [52] }}><code>cloneNode</code> 한 번으로 만들고</Peek>, 대신
+						복제한 뒤에 <Peek lines={{ compiled: [11, 15, 19, 20, 24] }}
+							>다룰 노드를 다시 찾아가야</Peek
+						> 합니다.
+					</p>
 					<Say at={48} note="통째로 남길지, 첫 자식만 남길지" point="!is_fragment" />
 					<Say at={52} note="cloneNode인지 importNode인지" point="use_import_node" />
 				</Beat>
@@ -906,44 +1252,6 @@
 							</li>
 						{/each}
 					</ul>
-				</Beat>
-				<Beat>
-					<Ask>
-						<p>
-							끝으로 생각해 볼 질문을 하나 남깁니다. 카운터의 노드를 만드는 두 방식을 나란히 놓으면
-							아래와 같습니다. <Look
-								at={[
-									{
-										code: 'by-template',
-										text: ['var root = $.template(', 'var fragment = root();']
-									}
-								]}>템플릿을 복제하는 방식</Look
-							>과 <Look
-								at={[
-									{
-										code: 'by-create',
-										text: [
-											'var fragment = document.createDocumentFragment();',
-											"var button = document.createElement('button');",
-											"button.append(' ');",
-											"var p = document.createElement('p');",
-											"p.append(' ');",
-											"var button_1 = document.createElement('button');",
-											"button_1.append('초기화');",
-											"fragment.append(button, ' ', p, ' ', button_1);"
-										]
-									}
-								]}><code>createElement</code>로 노드를 하나씩 만드는 방식</Look
-							>은 무엇이 다를까요?
-						</p>
-						<Highlight code={BY_TEMPLATE} name="by-template" />
-						<Highlight code={BY_CREATE} name="by-create" />
-					</Ask>
-					<p>
-						이 장에서는 이 질문의 답을 따로 적지 않았습니다. 같은 카운터를 여러 번 마운트한다고
-						생각하고, 두 방식이 각각 HTML을 몇 번 파싱하는지와 노드를 만드는 함수를 몇 번 부르는지
-						세어 보면 실마리를 찾을 수 있습니다.
-					</p>
 				</Beat>
 				<Beat code="compiled" at={11} note="다음 장은 여기부터" point="$.first_child">
 					<p>
@@ -978,6 +1286,14 @@
 </div>
 
 <style>
+	/* a quiet note under code shown in the text (question 6: the template string written in parts) */
+	.aside {
+		margin: 8px 0 0;
+		font-size: 13.5px;
+		line-height: 1.6;
+		color: var(--fg-3);
+	}
+
 	/* the left margin is wider: the index tabs (BookTabs) sit in it, clear of the code */
 	.page {
 		max-width: 1440px;

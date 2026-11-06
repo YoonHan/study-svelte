@@ -247,9 +247,17 @@ export class ChapterState {
 		return this.beats[index]?.on ?? /** @type {string} */ (this.view_of(index).at(-1));
 	}
 
-	/** files on the stage now */
+	/**
+	 * files on the stage now; while words that stand for lines are pointed at (`<Peek>`) and
+	 * those lines are in a file the beat has not put up, the stage shows the files they stand for
+	 */
 	get view() {
-		return this.view_of(this.focus);
+		const view = this.view_of(this.focus);
+		if (this.peek) {
+			const keys = Object.keys(this.peek.lines);
+			if (!keys.every((key) => view.includes(key))) return keys;
+		}
+		return view;
 	}
 
 	/** the open hint of the focused beat, if any */

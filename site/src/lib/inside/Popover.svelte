@@ -136,8 +136,7 @@
 	}}
 >
 	{@render trigger()}
-</span>
-<span
+</span><span
 	class="card shiki"
 	popover="manual"
 	role="tooltip"
