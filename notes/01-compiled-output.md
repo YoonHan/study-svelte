@@ -404,7 +404,113 @@ Q1.4는 세 가지를 묻습니다. 이 중 파싱 시점은 이 장에서, `<!>
 
 ### Q1.6 [설명] 템플릿 복제 방식과 `createElement` 방식의 장단점, `importNode`
 
-아직 진행하지 않았습니다.
+1-1장에서 알 수 있는 만큼(파싱 횟수, 노드를 만드는 호출 횟수)으로 답합니다. `importNode`를 쓰는 이유는 Q1.1의 해설과 사이트 1-1장 질문 4의 실험에서 이미 다뤘습니다. 복제한 뒤 필요한 노드를 `$.child`/`$.sibling`으로 찾아가는 비용은 1-2장(Q1.3, Q1.2)에서 다룹니다.
+
+실험: `labs/01-compiled-output/create-vs-clone.mjs`. 카운터의 마크업을 jsdom에서 두 방식으로 100번씩 만들고, HTML 파싱 횟수와 DOM 함수 호출 횟수, 마운트 한 번에 생기는 노드 수를 셉니다. 템플릿 쪽은 `svelte@5.0.0`의 `template()`을 그대로 씁니다. 출력은 `scratch/labs/create-vs-clone.txt`에 있습니다.
+
+#### 1. 같은 카운터를 100번 마운트하면, 템플릿을 복제하는 방식은 HTML 문자열을 몇 번 파싱하고, 노드를 복제하는 함수를 몇 번 부를까요?
+
+<details>
+<summary>해설</summary>
+
+파싱은 1번, 복제는 100번입니다. `root()`가 처음 불릴 때만 `node`가 `undefined`이므로, HTML 문자열은 그때 한 번만 파싱되어 `node`에 남습니다. 그 뒤로는 부를 때마다 `node`를 `cloneNode(true)`로 한 번 복제합니다.
+
+> 근거: `svelte/packages/svelte/src/internal/client/dom/template.js:46-48` (`if (node === undefined)` 안에서만 `create_fragment_from_html` 호출), `:51-53` (부를 때마다 `cloneNode(true)` 또는 `importNode`)
+
+> 근거: 실험 출력. 100번 마운트에서 `HTML 파싱(innerHTML): 1번`, `cloneNode: 100번`
+
+</details>
+
+#### 2. `createElement`로 노드를 하나씩 만드는 방식은 어떨까요? 파싱은 몇 번 일어나고, 마운트 한 번에 노드는 몇 개 만들어질까요?
+
+<details>
+<summary>해설</summary>
+
+혹시 노드를 만드는 호출이 `createDocumentFragment` 1번과 `createElement` 3번, 모두 4번이라고 생각하셨나요? 이 방식은 HTML 문자열을 쓰지 않으므로 파싱은 0번이 맞습니다. 하지만 노드는 4개보다 많습니다. `append`에 문자열을 넘기면 브라우저가 그 문자열로 텍스트 노드를 만들어 넣기 때문입니다. `append`에 넘긴 문자열은 `' '`(버튼 안), `' '`(문단 안), `'초기화'`, 그리고 최상위 요소 사이의 `' '` 두 개로 모두 5개입니다. 그래서 마운트 한 번에 fragment 1개, 요소 3개, 텍스트 노드 5개, 모두 9개의 노드가 만들어지고, 100번 마운트하면 900개가 됩니다. 그 9개를 만들려고 JavaScript는 마운트마다 DOM 함수를 8번(`createDocumentFragment` 1번, `createElement` 3번, `append` 4번) 부릅니다.
+
+> 근거: 1-1장 끝의 `BY_CREATE` 코드(`site/src/routes/learn/1-1/+page.svelte:73-83`). 브라우저 콘솔에서 `p.append(' ')` 뒤 `p.childNodes[0]`은 `#text " "`
+
+> 근거: 실험 출력. 100번 마운트에서 `createDocumentFragment: 100번`, `createElement: 300번`, `append: 400번`, 마운트 한 번에 노드 9개(fragment 1, 요소 3, 텍스트 5)
+
+> 처음 세운 가설: 노드를 만드는 호출을 `createDocumentFragment`와 `createElement`만 세어 마운트당 4번(100번 마운트에 400번)이라고 답했습니다. 그다음에는 텍스트 노드를 4개로 세어 8개라고 했습니다. `append`에 넘긴 문자열을 하나씩 세어 보니 5개였고, 노드는 9개가 되었습니다.
+
+</details>
+
+#### 3. 그렇다면 템플릿을 복제하는 방식은 마운트 한 번에 노드를 몇 개 만들까요?
+
+<details>
+<summary>해설</summary>
+
+혹시 `cloneNode`를 한 번만 부르니 노드도 더 적게 만들어질 거라고 생각하셨나요? 템플릿을 복제하는 방식도 마운트 한 번에 노드를 **9개** 만듭니다. `createElement` 방식과 정확히 같은 수입니다.
+
+- 요소 3개: `<button>`, `<p>`, `<button>`
+- 텍스트 노드 5개: 버튼 안의 `' '`, 문단 안의 `' '`, `'초기화'`, 그리고 최상위 태그 사이의 공백 2개. 원본 `Counter.svelte`에서는 태그 사이가 줄바꿈이었지만, 컴파일러가 이를 공백 한 칸으로 줄여서 템플릿 문자열에는 `</button> <p>`처럼 공백이 남습니다. 브라우저는 이 공백을 버리지 않고 `" "`를 담은 텍스트 노드로 만듭니다. `createElement` 방식에서 `fragment.append(button, ' ', p, ' ', button_1)`의 `' '`와 같은 자리, 같은 노드입니다.
+- `DocumentFragment` 1개: 두 번째 인자가 `1`(`TEMPLATE_FRAGMENT`)이라 `node`에는 파싱한 `DocumentFragment`가 통째로 남고, `cloneNode(true)`는 그 fragment 자신과 안의 모든 노드를 복제합니다.
+
+`cloneNode(true)`는 이 9개를 JavaScript 호출 한 번으로 한꺼번에 만듭니다. 노드 수는 같고, 만드는 방법이 다릅니다.
+
+> 근거: `svelte/packages/svelte/src/internal/client/dom/template.js:47-48` (`is_fragment`이면 `node`는 파싱한 fragment 그대로), `:51-53` (`cloneNode(true)`로 통째로 복제)
+
+> 근거: 실험 출력. 템플릿 방식도 마운트 한 번에 노드 9개(fragment 1, 요소 3, 텍스트 5, 주석 0)
+
+> 처음 세운 가설: 요소 3개와 그 안의 텍스트 3개, 모두 6개라고 답했습니다. 태그 사이의 공백은 줄바꿈 처리나 빈 텍스트 노드가 되지 않을까 생각했는데, 실제로는 공백 한 칸을 담은 텍스트 노드 2개였습니다. 맨 바깥의 `DocumentFragment`까지 세니 9개가 되었습니다.
+
+</details>
+
+#### 4. 노드 수가 같다면, 템플릿을 복제하는 방식은 무엇이 더 나은 걸까요?
+
+<details>
+<summary>해설</summary>
+
+JavaScript가 DOM 함수를 부르는 횟수가 다릅니다. 100번 마운트할 때 `createElement` 방식은 DOM 함수를 800번(마운트마다 8번) 부르고, 템플릿을 복제하는 방식은 101번(처음 파싱할 때 `<template>` 요소를 만드는 `createElement` 1번, 그리고 `cloneNode` 100번) 부릅니다.
+
+호출 수가 중요한 이유는 누가 일을 지시하느냐에 있습니다. `cloneNode(true)`를 부르면 JavaScript는 "이 fragment를 통째로 복제해 달라"고 한 번 부탁할 뿐이고, 9개의 노드를 하나씩 방문하고 복사하는 일은 브라우저가 자기 안의 네이티브 코드로 한 번에 처리합니다. `createElement` 방식에서는 어떤 노드를 만들고 어디에 붙일지를 JavaScript가 한 단계씩 정하고, 단계마다 브라우저의 DOM 함수를 부릅니다. 호출 하나하나가 JavaScript와 브라우저 사이의 경계를 넘는 일이라, 같은 9개를 만들어도 경계를 8번 넘습니다. 만드는 노드의 양은 같고, 그 일을 몇 번에 나눠 지시하느냐가 다릅니다. (다만 템플릿 방식에도 복제한 뒤에 치르는 비용이 따로 있습니다. 6에서 봅니다.)
+
+> 근거: 실험 출력. `createElement` 방식은 `createDocumentFragment: 100번`, `createElement: 300번`, `append: 400번`(합계 800번), 템플릿 방식은 `createElement: 1번`, `cloneNode: 100번`(합계 101번)
+
+> 근거: `svelte/packages/svelte/src/internal/client/dom/template.js:51-53` (마운트마다 `cloneNode(true)` 한 번)
+
+</details>
+
+#### 5. 카운터 끝에 내용이 바뀌지 않는 문단 `<p>도움말 1</p>`~`<p>도움말 5</p>`를 더하면, 두 방식의 코드는 각각 어떻게 늘어날까요?
+
+<details>
+<summary>해설</summary>
+
+혹시 `createElement` 방식은 문단이 다섯 개니 다섯 줄쯤 늘어날 거라고 생각하셨나요? 문단 하나를 만들려면 요소를 만드는 줄(`createElement`)과 그 안에 글자를 넣는 줄(`append`)이 함께 필요해서 10줄이 늘어납니다. 그리고 마지막 `fragment.append(...)`에도 새 문단 5개와 그 사이의 공백 `' '` 5개, 모두 인자 10개가 붙습니다. 마운트 한 번에 부르는 DOM 함수도 8번에서 18번으로 늘어납니다.
+
+템플릿을 복제하는 방식은 템플릿 문자열만 길어집니다. 문단 다섯 개가 문자열 안에 그대로 들어가서 `cloneNode` 한 번에 함께 복제되므로, 마운트할 때 실행되는 코드와 DOM 함수 호출(마운트당 1번)은 늘지 않습니다. 실제로 컴파일해 보면 JavaScript는 `$.next(10);` 한 줄만 늘어납니다. 이 줄은 하이드레이션 중일 때만 일하고 보통 마운트할 때는 아무것도 하지 않으며, 왜 생기는지는 1-7장(Q1.5)에서 다룹니다.
+
+바뀌지 않는 마크업이 많을수록 두 방식의 차이가 커집니다.
+
+> 근거: `playground/01-compiled-output/14-static-help-base.svelte`(사이트의 카운터)와 `14-static-help.svelte`(끝에 문단 다섯 개)의 컴파일 결과 `scratch/compiled/14-static-help-base.compiled.js`, `14-static-help.compiled.js`. 차이는 템플릿 문자열(6행)과 `$.next(10);` 한 줄뿐
+
+> 근거: `svelte/packages/svelte/src/internal/client/dom/hydration.js:69-80` (`next`는 `hydrating`일 때만 노드를 건너뜀)
+
+> 처음 세운 가설: `createElement` 방식은 요소가 다섯 개 늘었으니 다섯 줄쯤 늘어난다고 답했습니다. `<p>` 하나를 만드는 두 줄을 보고 10줄로 고쳤고, `fragment.append`의 인자도 함께 늘어난다는 것을 확인했습니다. 템플릿 방식은 "템플릿 문자열만 바뀐다"는 예측이 맞았고, 마운트할 때 일하지 않는 `$.next(10)` 한 줄이 더해졌습니다.
+
+</details>
+
+#### 6. 템플릿을 복제하는 방식에는 대가가 없을까요? 복제한 뒤에 숫자를 써 넣을 `<p>` 안의 텍스트 노드는 어떻게 손에 넣을까요?
+
+<details>
+<summary>해설</summary>
+
+혹시 템플릿 방식은 마운트할 때 DOM에 정말 한 번만 손댄다고 생각하셨나요? `createElement` 방식은 `var p = document.createElement('p')`처럼 노드를 만들자마자 변수에 담습니다. 템플릿 방식은 fragment를 통째로 복제하므로, 나중에 다룰 노드를 복제본 안에서 다시 찾아가야 합니다. 카운터의 컴파일 결과는 `$.first_child`로 첫 버튼에, `$.child`로 그 안의 텍스트에, `$.sibling(button, 2)`로 두 칸 옆의 `<p>`에 가는 식으로 다섯 번 찾아갑니다. 노드를 한 칸씩 옮겨 다니는 접근(`firstChild`, `nextSibling`)을 세면 마운트마다 8번입니다(그중 한 번은 `template()`이 복제본의 첫 노드를 기록할 때 읽습니다). 노드를 만드는 호출 8번을 줄였는데, 찾아가는 접근이 8번 생긴 셈입니다. 처음 한 번 HTML을 파싱하는 비용도 있습니다.
+
+그래도 실제 브라우저에서 재면 템플릿 방식이 빠릅니다. 찾아가는 접근은 이미 있는 노드를 읽기만 하므로 노드를 만드는 일보다 가볍습니다. 그리고 코드가 다룰 노드만 찾아가므로, 바뀌지 않는 마크업이 늘어도 찾아가는 비용은 늘지 않습니다. Chromium에서 1만 번 마운트한 시간(7번 잰 중앙값)은 카운터만 있을 때 `createElement` 8.5ms, 템플릿 복제와 찾아가기 6.3ms였고, 정적 문단을 5개 더하면 21.3ms와 10.5ms, 50개 더하면 145.3ms와 52.2ms였습니다.
+
+찾아가는 방법(왜 `$.sibling(button, 2)`처럼 칸 수를 세는지, 어떤 노드를 건너뛰는지)은 1-2장에서 다룹니다.
+
+> 근거: `scratch/compiled/14-static-help-base.compiled.js:10-24` (`root()` 뒤 `$.first_child`, `$.child`, `$.sibling`으로 찾아감)
+
+> 근거: `svelte/packages/svelte/src/internal/client/dom/operations.js:75`, `:85` (`first_child_getter`, `next_sibling_getter`로 한 칸씩 이동), `template.js:56` (복제본의 첫 노드를 읽음)
+
+> 근거: 실험 `labs/01-compiled-output/create-vs-clone.mjs`의 출력. 템플릿 방식은 마운트당 노드를 찾아가는 접근 8번, `createElement` 방식은 0번(`scratch/labs/create-vs-clone.txt`)
+
+> 근거: 실험 `labs/01-compiled-output/create-vs-clone.bench.html`(실행: `create-vs-clone.bench.mjs`)의 Chromium 156 측정값(`scratch/labs/create-vs-clone.bench.txt`)
+
+</details>
 
 ---
 

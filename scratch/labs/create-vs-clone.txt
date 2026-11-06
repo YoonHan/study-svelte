@@ -1,0 +1,16 @@
+
+## createElement로 하나씩 만드는 방식, 100번 마운트
+  createDocumentFragment: 100번
+  createElement: 300번
+  append: 400번
+  DOM 함수 호출 합계: 800번 (마운트 한 번에 약 8.00번)
+  노드를 찾아가는 접근(firstChild, nextSibling): 0번 (마운트 한 번에 약 0.00번)
+  마운트 한 번에 생기는 노드: 9개 (fragment 1, 요소 3, 텍스트 5, 주석 0)
+
+## 템플릿을 복제하는 방식 (svelte@5.0.0 template()), 100번 마운트
+  createElement: 1번
+  HTML 파싱(innerHTML): 1번
+  cloneNode: 100번
+  DOM 함수 호출 합계: 101번 (마운트 한 번에 약 1.01번)
+  노드를 찾아가는 접근(firstChild, nextSibling): 800번 (마운트 한 번에 약 8.00번)
+  마운트 한 번에 생기는 노드: 9개 (fragment 1, 요소 3, 텍스트 5, 주석 0)

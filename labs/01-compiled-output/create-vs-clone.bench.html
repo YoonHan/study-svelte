@@ -1,0 +1,69 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Q1.6 timing: createElement vs template cloning</title>
+<!--
+  Q1.6: the counter's nodes made two ways, timed in a real browser (open this file, or run
+  labs/01-compiled-output/create-vs-clone.bench.mjs). The template way parses once, then
+  clones and walks to the nodes the compiled counter keeps (first_child, child, sibling),
+  as svelte@5.0.0 does; the static variant adds five unchanging <p> to both.
+-->
+<pre id="out"></pre>
+<script>
+	const statics = (n) => Array.from({ length: n }, (_, i) => ` <p>도움말 ${i + 1}</p>`).join('');
+
+	function by_create(extra) {
+		var fragment = document.createDocumentFragment();
+		var button = document.createElement('button');
+		button.append(' ');
+		var p = document.createElement('p');
+		p.append(' ');
+		var button_1 = document.createElement('button');
+		button_1.append('초기화');
+		fragment.append(button, ' ', p, ' ', button_1);
+		for (let i = 0; i < extra; i++) {
+			var help = document.createElement('p');
+			help.append(`도움말 ${i + 1}`);
+			fragment.append(' ', help);
+		}
+		return fragment;
+	}
+
+	function make_template(extra) {
+		const t = document.createElement('template');
+		t.innerHTML = `<button> </button> <p> </p> <button>초기화</button>` + statics(extra);
+		const node = t.content;
+		return () => {
+			var fragment = node.cloneNode(true);
+			var button = fragment.firstChild;
+			var text = button.firstChild;
+			var p = button.nextSibling.nextSibling;
+			var text_1 = p.firstChild;
+			var button_1 = p.nextSibling.nextSibling;
+			return fragment;
+		};
+	}
+
+	function time(fn, n) {
+		for (let i = 0; i < 2000; i++) fn(); // warm up
+		const start = performance.now();
+		for (let i = 0; i < n; i++) fn();
+		return performance.now() - start;
+	}
+
+	const N = 10000;
+	const lines = [];
+	for (const extra of [0, 5, 50]) {
+		const rounds = { create: [], clone: [] };
+		for (let r = 0; r < 7; r++) {
+			rounds.create.push(time(() => by_create(extra), N));
+			const clone = make_template(extra);
+			rounds.clone.push(time(clone, N));
+		}
+		const median = (a) => a.sort((x, y) => x - y)[3];
+		lines.push(
+			`정적 문단 ${extra}개, ${N}번 마운트 (7번 잰 중앙값): createElement ${median(rounds.create).toFixed(1)}ms, 템플릿 복제 + 찾아가기 ${median(rounds.clone).toFixed(1)}ms`
+		);
+	}
+	document.getElementById('out').textContent = lines.join('\n');
+	window.done = lines;
+</script>
