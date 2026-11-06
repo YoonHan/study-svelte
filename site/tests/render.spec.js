@@ -802,7 +802,9 @@ test('the value passed in the custom element experiment is circled, for either c
 	page
 }) => {
 	await open(page);
-	const lab = page.locator('.beat:has(.table-wrap)');
+	const lab = page.locator('.beat:has(.table-wrap)', {
+		hasText: 'cloneNode와 importNode로 커스텀 엘리먼트 복제하기'
+	});
 	await lab.scrollIntoViewIfNeeded();
 	await lab.dispatchEvent('pointerdown');
 	const flags = lab.locator('.flag, [role=tab], button').filter({ hasText: /문자열|객체/ });
@@ -884,7 +886,9 @@ test('running the custom element experiment fills the table from the top, and th
 	page
 }) => {
 	await open(page);
-	const lab = page.locator('.beat:has(.table-wrap)');
+	const lab = page.locator('.beat:has(.table-wrap)', {
+		hasText: 'cloneNode와 importNode로 커스텀 엘리먼트 복제하기'
+	});
 	await lab.scrollIntoViewIfNeeded();
 	await lab.dispatchEvent('pointerdown');
 	const columns = () =>
@@ -1323,7 +1327,7 @@ for (const ch of CHAPTERS) {
 						stage: items.length ? Math.min(...items.map((r) => r.left)) : Infinity
 					};
 				});
-				expect(place.count, 'two tabs').toBe(2);
+				expect(place.count, 'three tabs').toBe(3);
 				expect(place.top, 'in view').toBeGreaterThan(0);
 				expect(place.right, 'clear of the code').toBeLessThanOrEqual(place.stage);
 				const flow = await page.evaluate(
@@ -1414,3 +1418,210 @@ for (const ch of CHAPTERS) {
 		expect(opacity).toBe(1);
 	});
 }
+
+/*
+ * Question 6's experiment counts the DOM calls each way makes. It once wrapped only the
+ * prototypes, so the document's own `createElement` (put there by another experiment on the
+ * page) went uncounted: 500 calls instead of 800, and no parse at all.
+ */
+test('the createElement-vs-template experiment counts every call and the one parse', async ({
+	page
+}) => {
+	await open(page);
+	const lab = page.locator('.beat', { hasText: '두 방식으로 카운터의 노드 만들기' });
+	await lab.scrollIntoViewIfNeeded();
+	await lab.getByRole('button', { name: /마운트/ }).click();
+	await page.waitForTimeout(1200);
+	const rows = await lab
+		.locator('tbody tr')
+		.evaluateAll((trs) =>
+			trs.map((tr) => [...tr.querySelectorAll('td')].map((td) => td.textContent?.trim()))
+		);
+	expect(rows[0], 'HTML parses').toEqual(['0번', '1번']);
+	expect(rows[1], 'DOM calls that make nodes').toEqual(['800번', '100번']);
+	expect(rows[2], 'nodes per mount').toEqual(['9개', '9개']);
+});
+
+/*
+ * Question 6's timing experiment: the code shown above the results is eight lines tall for
+ * every choice, so choosing another number of paragraphs does not push what follows. Its code
+ * blocks in the text fit a phone's width, so no part of the code is cut off.
+ */
+test('choosing how many paragraphs to add does not move what follows the timing experiment', async ({
+	page
+}) => {
+	await open(page);
+	const lab = page.locator('.beat', { hasText: '두 방식으로 1만 번씩 마운트해서 시간 재기' });
+	await lab.scrollIntoViewIfNeeded();
+	const bottom = () => lab.evaluate((el) => Math.round(el.getBoundingClientRect().bottom));
+	const start = await bottom();
+	for (const name of ['문단 5개', '문단 50개', '더하지 않음']) {
+		await lab.getByText(name, { exact: true }).click();
+		await page.waitForTimeout(300);
+		expect(await bottom(), `after "${name}"`).toBe(start);
+	}
+});
+
+test("on a phone, question 6's code blocks fit without being cut off", async ({ browser }) => {
+	const context = await browser.newContext({
+		viewport: { width: 390, height: 844 },
+		isMobile: true,
+		hasTouch: true
+	});
+	const page = await context.newPage();
+	await open(page, 999, CHAPTERS[0]);
+	const cut = await page.evaluate(() => {
+		const start = [...document.querySelectorAll('.beat')].findIndex((b) =>
+			b.textContent?.includes('같은 노드를')
+		);
+		const end = [...document.querySelectorAll('.beat')].findIndex(
+			(b) => b.querySelector('h2')?.textContent === '정리'
+		);
+		return [...document.querySelectorAll('.beat')]
+			.slice(start, end)
+			.flatMap((b) => [...b.querySelectorAll('pre')])
+			.filter((pre) => pre.scrollWidth > pre.clientWidth + 1)
+			.map((pre) => `${pre.textContent?.slice(0, 30)} (${pre.scrollWidth} > ${pre.clientWidth})`);
+	});
+	expect(cut).toEqual([]);
+	await context.close();
+});
+
+/*
+ * Words in a summary that stand for lines (<Peek>) light those lines on the stage when pointed
+ * at. One once pointed at a file the beat had not put on the stage, so nothing lit up.
+ */
+for (const ch of CHAPTERS) {
+	test(`${ch.url}: pointing at words that stand for lines lights them on the stage`, async ({
+		page
+	}) => {
+		await open(page, 999, ch);
+		const peeks = page.locator('.beat .peek');
+		const count = await peeks.count();
+		test.skip(count === 0, 'no such words in this chapter');
+		/** @type {string[]} */
+		const dark = [];
+		for (let i = 0; i < count; i++) {
+			const peek = peeks.nth(i);
+			await peek.evaluate((el) =>
+				el.closest('.beat')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+			);
+			await peek.scrollIntoViewIfNeeded();
+			await page.waitForTimeout(500);
+			await peek.hover();
+			await page.waitForTimeout(500);
+			// lit, and every lit line inside the part of its file the stage shows
+			const seen = await page.evaluate(() => {
+				const rows = [...document.querySelectorAll('.stage .lit')];
+				const shown = rows.every((row) => {
+					const pane = row.closest('.scroller') ?? row.parentElement;
+					if (!pane) return false;
+					const r = row.getBoundingClientRect();
+					const box = pane.getBoundingClientRect();
+					return r.top >= box.top - 1 && r.bottom <= box.bottom + 1;
+				});
+				return { count: rows.length, shown };
+			});
+			if (seen.count === 0 || !seen.shown) dark.push((await peek.textContent())?.trim() ?? '');
+			await page.mouse.move(0, 0);
+		}
+		expect(dark, 'words whose lines do not light up in view').toEqual([]);
+	});
+}
+
+/*
+ * Words that open a card (a reminder, a source, a peek at lines) are followed by the card's
+ * markup; no line break may sit between them, or a phone shows a space before the punctuation
+ * after the words ("만들고 , 대신").
+ */
+test('no stray space follows words that open a card', async ({ browser }) => {
+	const context = await browser.newContext({
+		viewport: { width: 390, height: 844 },
+		isMobile: true,
+		hasTouch: true
+	});
+	const page = await context.newPage();
+	await open(page, 999, CHAPTERS[0]);
+	const gaps = await page.evaluate(() =>
+		[...document.querySelectorAll('.card[popover]')]
+			.filter((card) => {
+				const before = card.previousSibling;
+				return before?.nodeType === Node.TEXT_NODE && /^\s+$/.test(before.textContent ?? '');
+			})
+			.map((card) => card.previousElementSibling?.textContent?.trim().slice(0, 20))
+	);
+	expect(gaps).toEqual([]);
+	await context.close();
+});
+
+/*
+ * The third index tab switches the whole site between light and dark, and the choice holds on
+ * the next page. Every dark rule keys off the theme the page has, not only the system's.
+ */
+test('the theme tab switches light and dark, and the choice holds', async ({ page }) => {
+	await open(page, 999, CHAPTERS[1]);
+	const look = () =>
+		page.evaluate(() => ({
+			theme: document.documentElement.dataset.theme,
+			bg: getComputedStyle(document.body).backgroundColor,
+			word: [...document.querySelectorAll('.tabs .theme .word')]
+				.filter((w) => getComputedStyle(w).visibility !== 'hidden')
+				.map((w) => w.textContent)
+				.join()
+		}));
+	const height = () =>
+		page.locator('.tabs .theme').evaluate((el) => Math.round(el.getBoundingClientRect().height));
+	const tall = await height();
+	const before = await look();
+	expect(before.theme).toBe('light');
+	expect(before.word).toBe('어둡게');
+	await page.locator('.tabs .theme').click();
+	await page.waitForTimeout(600);
+	const after = await look();
+	expect(after.theme).toBe('dark');
+	expect(after.word).toBe('밝게');
+	expect(after.bg, 'the page turns dark').not.toBe(before.bg);
+	expect(await height(), 'the tab keeps its size').toBe(tall);
+	await page.goto('/');
+	await page.waitForTimeout(500);
+	expect(
+		await page.evaluate(() => document.documentElement.dataset.theme),
+		'held on the home page'
+	).toBe('dark');
+	await page.evaluate(() => localStorage.removeItem('svelte-inside:theme'));
+});
+
+/*
+ * A circle marks only what the words are about. "createElement로 노드를 하나씩 만드는 방식"
+ * once circled whole lines, `var fragment =` and all; now it circles the four calls that make
+ * nodes, the second `createElement('button')` found as the second of its kind.
+ */
+test('the createElement way is circled at its four node-making calls only', async ({ page }) => {
+	await open(page);
+	const look = page.locator('.look', { hasText: 'createElement로 노드를 하나씩 만드는 방식' });
+	await look.evaluate((el) =>
+		el.closest('.beat')?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+	);
+	await look.scrollIntoViewIfNeeded();
+	await page.waitForTimeout(400);
+	await look.hover();
+	await page.waitForTimeout(600);
+	const rings = await page.evaluate(() => {
+		const block = /** @type {HTMLElement} */ (document.querySelector('[data-code="by-create"]'));
+		const base = block.getBoundingClientRect();
+		const words = [...block.querySelectorAll('.line, span')].find((el) =>
+			el.textContent?.startsWith('var fragment')
+		);
+		return {
+			count: block.querySelectorAll('.look-mark').length,
+			// how far in from the code's left edge each circle starts: past "var x =" / indent
+			lefts: [...block.querySelectorAll('.look-mark')].map((m) =>
+				Math.round(m.getBoundingClientRect().left - base.left)
+			),
+			found: !!words
+		};
+	});
+	expect(rings.count, 'four calls').toBe(4);
+	for (const left of rings.lefts)
+		expect(left, 'not from the start of the line').toBeGreaterThan(60);
+});

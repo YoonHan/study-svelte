@@ -80,12 +80,10 @@
 		box-shadow: 0 -1px 4px rgb(0 0 0 / 0.12);
 	}
 
-	@media (prefers-color-scheme: dark) {
-		.flag {
-			background: #e8cf55;
-			color: #1d1f22;
-			box-shadow: 0 -1px 5px rgb(0 0 0 / 0.4);
-		}
+	:global(:root[data-theme='dark']) .flag {
+		background: #e8cf55;
+		color: #1d1f22;
+		box-shadow: 0 -1px 5px rgb(0 0 0 / 0.4);
 	}
 
 	/* a code example inside the question reads as code, not as part of the printed problem */

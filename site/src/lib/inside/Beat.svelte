@@ -427,12 +427,10 @@
 		box-shadow: 0 1px 4px rgb(0 0 0 / 0.12);
 	}
 
-	@media (prefers-color-scheme: dark) {
-		.answer-flag {
-			background: #e08a52;
-			color: #1d1f22;
-			box-shadow: 0 1px 5px rgb(0 0 0 / 0.4);
-		}
+	:global(:root[data-theme='dark']) .answer-flag {
+		background: #e08a52;
+		color: #1d1f22;
+		box-shadow: 0 1px 5px rgb(0 0 0 / 0.4);
 	}
 
 	/* a code example between paragraphs */

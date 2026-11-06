@@ -4,6 +4,20 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<script>
+			// Light or dark, decided before anything is painted: the reader's choice if they made
+			// one (the theme tab in a chapter, src/lib/theme.svelte.js), else the system's.
+			(function () {
+				var saved = null;
+				try {
+					saved = localStorage.getItem('svelte-inside:theme');
+				} catch (e) {}
+				var dark =
+					saved === 'dark' ||
+					(saved !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+				document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+			})();
+		</script>
 		%sveltekit.head%
 		<script>
 			// Keep the page hidden until the fonts of its first screen are in (at most 3s, the

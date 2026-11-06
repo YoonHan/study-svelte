@@ -134,23 +134,21 @@
 		box-shadow: 0 -3px 6px -3px rgb(0 0 0 / 0.18);
 	}
 
-	@media (prefers-color-scheme: dark) {
-		.flag {
-			--mute: #5c5f64;
-			color: #1d1f22;
-		}
+	:global(:root[data-theme='dark']) .flag {
+		--mute: #5c5f64;
+		color: #1d1f22;
+	}
 
-		.flag.on {
-			box-shadow: 0 -2px 9px rgb(0 0 0 / 0.5);
-		}
+	:global(:root[data-theme='dark']) .flag.on {
+		box-shadow: 0 -2px 9px rgb(0 0 0 / 0.5);
+	}
 
-		.flag::after {
-			background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.22));
-		}
+	:global(:root[data-theme='dark']) .flag::after {
+		background: linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.22));
+	}
 
-		.sheet {
-			box-shadow: 0 -3px 7px -3px rgb(0 0 0 / 0.55);
-		}
+	:global(:root[data-theme='dark']) .sheet {
+		box-shadow: 0 -3px 7px -3px rgb(0 0 0 / 0.55);
 	}
 
 	@media (prefers-reduced-motion: reduce) {

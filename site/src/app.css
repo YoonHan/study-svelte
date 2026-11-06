@@ -48,28 +48,45 @@
 }
 
 /* the same notebook at night: dark paper, chalky ink, softer pens */
-@media (prefers-color-scheme: dark) {
-	:root {
-		--bg: #1a1b1d;
-		--surface: #202124;
-		--surface-2: #26282b;
-		--fg: #e9e6dd;
-		--fg-2: #b0ada5;
-		--fg-3: #7d7b75;
-		--line: #34363a;
-		--accent: #ff6b3d;
-		--selection: #ff7a50; /* lightened, so near-black words on it reach 7:1 */
-		--selection-ink: #120a06;
-		--red: #ff8a80;
-		--focus: #ff6b3d;
-		--ok: #7fd3a0;
-		--hi: rgb(214 186 40 / 0.42);
-		--hi-wash: rgb(255 220 40 / 0.17);
-		--hi-green: rgb(70 170 110 / 0.42);
-		--rule: rgb(140 170 220 / 0.14);
-		--margin: rgb(255 120 110 / 0.3);
-		color-scheme: dark;
-	}
+/*
+ * Switching the theme (theme.svelte.js): the whole page cross-fades from the old colors to the
+ * new, 250ms ease (a color change). Meanwhile nothing runs a color transition of its own, so
+ * nothing fades twice or lags behind.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 250ms;
+	animation-timing-function: ease;
+}
+
+/* while the theme switches, no transitions of their own (see above) */
+:root.theme-switching *,
+:root.theme-switching *::before,
+:root.theme-switching *::after {
+	transition: none !important;
+}
+
+/* the dark theme: chosen by the reader or the system (app.html sets data-theme) */
+:root[data-theme='dark'] {
+	--bg: #1a1b1d;
+	--surface: #202124;
+	--surface-2: #26282b;
+	--fg: #e9e6dd;
+	--fg-2: #b0ada5;
+	--fg-3: #7d7b75;
+	--line: #34363a;
+	--accent: #ff6b3d;
+	--selection: #ff7a50; /* lightened, so near-black words on it reach 7:1 */
+	--selection-ink: #120a06;
+	--red: #ff8a80;
+	--focus: #ff6b3d;
+	--ok: #7fd3a0;
+	--hi: rgb(214 186 40 / 0.42);
+	--hi-wash: rgb(255 220 40 / 0.17);
+	--hi-green: rgb(70 170 110 / 0.42);
+	--rule: rgb(140 170 220 / 0.14);
+	--margin: rgb(255 120 110 / 0.3);
+	color-scheme: dark;
 }
 
 *,
@@ -235,11 +252,9 @@ code {
 	color: var(--shiki-light);
 }
 
-@media (prefers-color-scheme: dark) {
-	.shiki .src span[style],
-	.hl span[style] {
-		color: var(--shiki-dark);
-	}
+:root[data-theme='dark'] .shiki .src span[style],
+:root[data-theme='dark'] .hl span[style] {
+	color: var(--shiki-dark);
 }
 
 /* lengths in the code font, resolved where they are set (Code.svelte) and inherited as such */
@@ -486,13 +501,11 @@ code {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23d83a00' stroke-opacity='1' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 
-@media (prefers-color-scheme: dark) {
-	.pen-underline {
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23ff6b3d' stroke-opacity='.6' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-	}
+:root[data-theme='dark'] .pen-underline {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23ff6b3d' stroke-opacity='.6' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
 
-	.pen-underline:hover,
-	.pen-underline:focus-within {
-		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23ff6b3d' stroke-opacity='1' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-	}
+:root[data-theme='dark'] .pen-underline:hover,
+:root[data-theme='dark'] .pen-underline:focus-within {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3.6C5 2 10 4.8 16 3.4S28 2 34 3.8 39 3.2 40 3.4' fill='none' stroke='%23ff6b3d' stroke-opacity='1' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
 }
